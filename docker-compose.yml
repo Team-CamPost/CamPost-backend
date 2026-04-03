@@ -1,0 +1,101 @@
+# ============================================================
+# CamPost — Docker Compose (개발 환경)
+# 사용법:
+#   cp .env.example .env
+#   docker compose up --build
+# ============================================================
+
+name: campost
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: campost-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Spring Boot API + Importer + AIUpdater ─────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campost-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL:      ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      JWT_SECRET:                 ${JWT_SECRET}
+      JWT_EXPIRY_MS:              ${JWT_EXPIRY_MS}
+      RAW_STORE_DIR:              ${RAW_STORE_DIR}
+      AI_RESULT_DIR:              ${AI_RESULT_DIR}
+      OPENAI_API_KEY:             ${OPENAI_API_KEY}
+      AI_MODEL:                   ${AI_MODEL}
+      AI_MOCK:                    ${AI_MOCK}
+    ports:
+      - "8080:8080"
+    volumes:
+      - shared_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Python Crawler Pipeline ────────────────────────────────
+  pipeline:
+    build:
+      context: ../CamPost-pipeline
+      dockerfile: Dockerfile
+    container_name: campost-pipeline
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      OUTPUT_DIR:              /data
+      CRAWL_INTERVAL_MINUTES:  ${CRAWL_INTERVAL_MINUTES}
+      HEADLESS:                ${HEADLESS}
+      DB_HOST:                 db
+      DB_PORT:                 5432
+      POSTGRES_DB:             ${POSTGRES_DB}
+      POSTGRES_USER:           ${POSTGRES_USER}
+      POSTGRES_PASSWORD:       ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - shared_data:/data
+    shm_size: '2gb'
+    command: ["python", "main.py", "--loop"]
+
+  # ── React Frontend ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ../CamPost-frontend
+      dockerfile: Dockerfile
+    container_name: campost-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+
+volumes:
+  pgdata:
+  shared_data:    # pipeline ↔ backend 파일 공유 (RawStore, AIResultStore, Files)
