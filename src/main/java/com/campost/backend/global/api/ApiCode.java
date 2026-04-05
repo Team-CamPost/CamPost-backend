@@ -1,0 +1,36 @@
+package com.campost.backend.global.api;
+
+import org.springframework.http.HttpStatus;
+
+public enum ApiCode {
+    COMMON200(HttpStatus.OK, "COMMON200", "요청이 성공했습니다."),
+    COMMON400(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
+    TOKEN401(HttpStatus.UNAUTHORIZED, "TOKEN401", "액세스 토큰이 만료되었습니다."),
+    TOKEN402(HttpStatus.UNAUTHORIZED, "TOKEN402", "유효하지 않은 토큰입니다."),
+    AUTH403(HttpStatus.FORBIDDEN, "AUTH403", "접근 권한이 없습니다."),
+    COMMON404(HttpStatus.NOT_FOUND, "COMMON404", "리소스를 찾을 수 없습니다."),
+    COMMON409(HttpStatus.CONFLICT, "COMMON409", "리소스 충돌이 발생했습니다."),
+    SERVER500(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER500", "서버 내부 오류가 발생했습니다.");
+
+    private final HttpStatus httpStatus;
+    private final String code;
+    private final String message;
+
+    ApiCode(HttpStatus httpStatus, String code, String message) {
+        this.httpStatus = httpStatus;
+        this.code = code;
+        this.message = message;
+    }
+
+    public HttpStatus httpStatus() {
+        return httpStatus;
+    }
+
+    public String code() {
+        return code;
+    }
+
+    public String message() {
+        return message;
+    }
+}
