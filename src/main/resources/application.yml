@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: campost-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/campost}
+    username: ${SPRING_DATASOURCE_USERNAME:campost}
+    password: ${SPRING_DATASOURCE_PASSWORD:campost1234}
+    driver-class-name: org.postgresql.Driver
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  importer:
+    enabled: ${IMPORTER_ENABLED:true}
+    raw-store-dir: ${RAW_STORE_DIR:/data/raw}
+    initial-delay-ms: ${IMPORTER_INITIAL_DELAY_MS:5000}
+    fixed-delay-ms: ${IMPORTER_FIXED_DELAY_MS:30000}
+    batch-size: ${IMPORTER_BATCH_SIZE:100}

@@ -24,3 +24,15 @@ hs_err_pid*
 replay_pid*
 
 .env
+
+# Build outputs
+target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
