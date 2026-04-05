@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @Service
@@ -29,6 +29,7 @@ public class RawImportService {
     private static final Logger log = LoggerFactory.getLogger(RawImportService.class);
 
     private final RawImporterRepository rawImporterRepository;
+    private final RawImportTxService rawImportTxService;
     private final ObjectMapper objectMapper;
 
     @Value("${app.importer.enabled:true}")
@@ -41,9 +42,15 @@ public class RawImportService {
     private int batchSize;
 
     private volatile Instant lastScanTime = Instant.EPOCH;
+    private volatile String lastScanPathKey = "";
 
-    public RawImportService(RawImporterRepository rawImporterRepository, ObjectMapper objectMapper) {
+    public RawImportService(
+            RawImporterRepository rawImporterRepository,
+            RawImportTxService rawImportTxService,
+            ObjectMapper objectMapper
+    ) {
         this.rawImporterRepository = rawImporterRepository;
+        this.rawImportTxService = rawImportTxService;
         this.objectMapper = objectMapper;
     }
 
@@ -55,7 +62,6 @@ public class RawImportService {
         importChangedRawFiles();
     }
 
-    @Transactional
     public void importChangedRawFiles() {
         Path dir = Path.of(rawStoreDir);
         if (!Files.exists(dir) || !Files.isDirectory(dir)) {
@@ -63,26 +69,34 @@ public class RawImportService {
             return;
         }
 
-        Instant scanStartedAt = Instant.now();
         int imported = 0;
         int failed = 0;
+        FileCandidate lastContiguousSuccess = null;
+        boolean checkpointBlockedByFailure = false;
 
         try (Stream<Path> stream = Files.list(dir)) {
-            List<Path> targets = stream
+            List<FileCandidate> targets = stream
                     .filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .map(this::toFileCandidate)
+                    .filter(Objects::nonNull)
                     .filter(this::isUpdatedAfterLastScan)
-                    .sorted(Comparator.comparing(Path::toString))
+                    .sorted(Comparator.comparingLong(FileCandidate::lastModifiedMillis)
+                            .thenComparing(FileCandidate::pathKey))
                     .limit(batchSize)
                     .toList();
 
-            for (Path file : targets) {
+            for (FileCandidate candidate : targets) {
                 try {
-                    importOne(file);
+                    importOne(candidate.path());
                     imported++;
+                    if (!checkpointBlockedByFailure) {
+                        lastContiguousSuccess = candidate;
+                    }
                 } catch (Exception ex) {
                     failed++;
-                    rawImporterRepository.logImport(file.getFileName().toString(), "FAILED", ex.getMessage());
-                    log.warn("Raw import failed: {} ({})", file.getFileName(), ex.getMessage());
+                    rawImporterRepository.logImport(candidate.path().getFileName().toString(), "FAILED", ex.getMessage());
+                    log.warn("Raw import failed: {} ({})", candidate.path().getFileName(), ex.getMessage());
+                    checkpointBlockedByFailure = true;
                 }
             }
         } catch (IOException ex) {
@@ -90,25 +104,41 @@ public class RawImportService {
             return;
         }
 
-        lastScanTime = scanStartedAt;
+        if (lastContiguousSuccess != null) {
+            lastScanTime = Instant.ofEpochMilli(lastContiguousSuccess.lastModifiedMillis());
+            lastScanPathKey = lastContiguousSuccess.pathKey();
+        }
 
         if (imported > 0 || failed > 0) {
             log.info("Importer run done - imported: {}, failed: {}", imported, failed);
         }
     }
 
-    @Transactional
     public void forceImportAllRawFiles() {
         lastScanTime = Instant.EPOCH;
+        lastScanPathKey = "";
         importChangedRawFiles();
     }
 
-    private boolean isUpdatedAfterLastScan(Path path) {
+    private FileCandidate toFileCandidate(Path path) {
         try {
-            return Files.getLastModifiedTime(path).toInstant().isAfter(lastScanTime);
+            long modifiedMillis = Files.getLastModifiedTime(path).toMillis();
+            return new FileCandidate(path, modifiedMillis, path.toString());
         } catch (IOException ex) {
+            log.debug("Failed to read lastModified for {}: {}", path, ex.getMessage());
+            return null;
+        }
+    }
+
+    private boolean isUpdatedAfterLastScan(FileCandidate candidate) {
+        long checkpointMillis = lastScanTime.toEpochMilli();
+        if (candidate.lastModifiedMillis() > checkpointMillis) {
+            return true;
+        }
+        if (candidate.lastModifiedMillis() < checkpointMillis) {
             return false;
         }
+        return candidate.pathKey().compareTo(lastScanPathKey) > 0;
     }
 
     private void importOne(Path file) throws IOException {
@@ -121,9 +151,14 @@ public class RawImportService {
         Integer views = parseViews(payload.views());
         LocalDate deadline = parseLocalDate(payload.deadline());
 
-        long rawNoticeId = rawImporterRepository.upsertRawNotice(payload, crawledAt);
-        rawImporterRepository.upsertNotice(rawNoticeId, payload, noticeDate, views, deadline, crawledAt);
-        rawImporterRepository.logImport(file.getFileName().toString(), "SUCCESS", "Imported to raw_notices/notices");
+        rawImportTxService.importOne(
+            file.getFileName().toString(),
+            payload,
+            crawledAt,
+            noticeDate,
+            views,
+            deadline
+        );
     }
 
     private void validatePayload(RawNoticePayload payload, Path file) {
@@ -197,5 +232,8 @@ public class RawImportService {
         } catch (NumberFormatException ex) {
             return 0;
         }
+    }
+
+    private record FileCandidate(Path path, long lastModifiedMillis, String pathKey) {
     }
 }

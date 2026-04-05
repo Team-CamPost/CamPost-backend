@@ -10,6 +10,8 @@ RUN mvn -q -DskipTests package
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+RUN apk add --no-cache curl
+
 COPY --from=build /workspace/target/campost-backend-*.jar app.jar
 
 EXPOSE 8080

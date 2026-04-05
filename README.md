@@ -153,6 +153,13 @@ Windows PowerShell/CMD:
 copy .env.example .env
 ```
 
+필수 환경변수(`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`,
+`SPRING_DATASOURCE_PASSWORD`, `APP_CORS_ALLOWED_ORIGINS`,
+`JWT_SECRET`, `JWT_EXPIRY_MS`)는 반드시 실제 값으로 채워야 합니다.
+
+값이 비어 있거나 `<REQUIRED>` 같은 placeholder 상태면
+백엔드는 시작 단계에서 즉시 실패하도록 구성되어 있습니다.
+
 ### 2) Docker Compose 실행
 
 기본 실행 (DB + Backend + Pipeline):
