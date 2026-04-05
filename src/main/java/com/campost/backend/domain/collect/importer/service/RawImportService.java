@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 @Service
@@ -43,6 +44,7 @@ public class RawImportService {
 
     private volatile Instant lastScanTime = Instant.EPOCH;
     private volatile String lastScanPathKey = "";
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     public RawImportService(
             RawImporterRepository rawImporterRepository,
@@ -59,65 +61,81 @@ public class RawImportService {
         if (!enabled) {
             return;
         }
-        importChangedRawFiles();
+        importChangedRawFiles(false);
     }
 
     public void importChangedRawFiles() {
-        Path dir = Path.of(rawStoreDir);
-        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
-            log.debug("Raw store directory not ready: {}", rawStoreDir);
-            return;
-        }
-
-        int imported = 0;
-        int failed = 0;
-        FileCandidate lastContiguousSuccess = null;
-        boolean checkpointBlockedByFailure = false;
-
-        try (Stream<Path> stream = Files.list(dir)) {
-            List<FileCandidate> targets = stream
-                    .filter(path -> path.getFileName().toString().endsWith(".json"))
-                    .map(this::toFileCandidate)
-                    .filter(Objects::nonNull)
-                    .filter(this::isUpdatedAfterLastScan)
-                    .sorted(Comparator.comparingLong(FileCandidate::lastModifiedMillis)
-                            .thenComparing(FileCandidate::pathKey))
-                    .limit(batchSize)
-                    .toList();
-
-            for (FileCandidate candidate : targets) {
-                try {
-                    importOne(candidate.path());
-                    imported++;
-                    if (!checkpointBlockedByFailure) {
-                        lastContiguousSuccess = candidate;
-                    }
-                } catch (Exception ex) {
-                    failed++;
-                    rawImporterRepository.logImport(candidate.path().getFileName().toString(), "FAILED", ex.getMessage());
-                    log.warn("Raw import failed: {} ({})", candidate.path().getFileName(), ex.getMessage());
-                    checkpointBlockedByFailure = true;
-                }
-            }
-        } catch (IOException ex) {
-            log.error("Failed to scan raw directory: {}", ex.getMessage());
-            return;
-        }
-
-        if (lastContiguousSuccess != null) {
-            lastScanTime = Instant.ofEpochMilli(lastContiguousSuccess.lastModifiedMillis());
-            lastScanPathKey = lastContiguousSuccess.pathKey();
-        }
-
-        if (imported > 0 || failed > 0) {
-            log.info("Importer run done - imported: {}, failed: {}", imported, failed);
-        }
+        importChangedRawFiles(false);
     }
 
     public void forceImportAllRawFiles() {
-        lastScanTime = Instant.EPOCH;
-        lastScanPathKey = "";
-        importChangedRawFiles();
+        importChangedRawFiles(true);
+    }
+
+    private void importChangedRawFiles(boolean forceFullScan) {
+        if (!running.compareAndSet(false, true)) {
+            log.debug("Importer run skipped: another import cycle is already running");
+            return;
+        }
+
+        try {
+            if (forceFullScan) {
+                lastScanTime = Instant.EPOCH;
+                lastScanPathKey = "";
+            }
+
+            Path dir = Path.of(rawStoreDir);
+            if (!Files.exists(dir) || !Files.isDirectory(dir)) {
+                log.debug("Raw store directory not ready: {}", rawStoreDir);
+                return;
+            }
+
+            int imported = 0;
+            int failed = 0;
+            FileCandidate lastContiguousSuccess = null;
+            boolean checkpointBlockedByFailure = false;
+
+            try (Stream<Path> stream = Files.list(dir)) {
+                List<FileCandidate> targets = stream
+                        .filter(path -> path.getFileName().toString().endsWith(".json"))
+                        .map(this::toFileCandidate)
+                        .filter(Objects::nonNull)
+                        .filter(this::isUpdatedAfterLastScan)
+                        .sorted(Comparator.comparingLong(FileCandidate::lastModifiedMillis)
+                                .thenComparing(FileCandidate::pathKey))
+                        .limit(batchSize)
+                        .toList();
+
+                for (FileCandidate candidate : targets) {
+                    try {
+                        importOne(candidate.path());
+                        imported++;
+                        if (!checkpointBlockedByFailure) {
+                            lastContiguousSuccess = candidate;
+                        }
+                    } catch (Exception ex) {
+                        failed++;
+                        rawImporterRepository.logImport(candidate.path().getFileName().toString(), "FAILED", ex.getMessage());
+                        log.warn("Raw import failed: {} ({})", candidate.path().getFileName(), ex.getMessage());
+                        checkpointBlockedByFailure = true;
+                    }
+                }
+            } catch (IOException ex) {
+                log.error("Failed to scan raw directory: {}", ex.getMessage());
+                return;
+            }
+
+            if (lastContiguousSuccess != null) {
+                lastScanTime = Instant.ofEpochMilli(lastContiguousSuccess.lastModifiedMillis());
+                lastScanPathKey = lastContiguousSuccess.pathKey();
+            }
+
+            if (imported > 0 || failed > 0) {
+                log.info("Importer run done - imported: {}, failed: {}", imported, failed);
+            }
+        } finally {
+            running.set(false);
+        }
     }
 
     private FileCandidate toFileCandidate(Path path) {
@@ -152,12 +170,12 @@ public class RawImportService {
         LocalDate deadline = parseLocalDate(payload.deadline());
 
         rawImportTxService.importOne(
-            file.getFileName().toString(),
-            payload,
-            crawledAt,
-            noticeDate,
-            views,
-            deadline
+                file.getFileName().toString(),
+                payload,
+                crawledAt,
+                noticeDate,
+                views,
+                deadline
         );
     }
 
