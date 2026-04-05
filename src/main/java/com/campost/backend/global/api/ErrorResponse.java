@@ -3,7 +3,7 @@ package com.campost.backend.global.api;
 public record ErrorResponse(
         boolean isSuccess,
         String code,
-    String message
+        String message
 ) {
     public static ErrorResponse of(ApiCode code) {
         return of(code, code.message());
