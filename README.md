@@ -160,6 +160,11 @@ copy .env.example .env
 값이 비어 있거나 `<REQUIRED>` 같은 placeholder 상태면
 백엔드는 시작 단계에서 즉시 실패하도록 구성되어 있습니다.
 
+권장 분리 규칙:
+
+- `.env`: Docker Compose 실행용 (`db` 호스트 사용)
+- `.env.local`: 로컬 `./mvnw spring-boot:run` 실행용 (`localhost` 호스트 사용)
+
 ### 2) Docker Compose 실행
 
 기본 실행 (DB + Backend + Pipeline):
@@ -217,8 +222,65 @@ docker compose --profile frontend up --build -d
 
 Docker 없이 백엔드만 로컬에서 실행할 수도 있습니다.
 
+Maven이 설치되어 있지 않은 팀원을 위해 Maven Wrapper(`mvnw`)를 사용합니다.
+
+### 로컬 실행용 환경변수 준비
+
 ```bash
-mvn spring-boot:run
+cp .env.local.example .env.local
+```
+
+Windows PowerShell/CMD:
+
+```bash
+copy .env.local.example .env.local
+```
+
+DB는 compose로 띄우고, 로컬 실행 전에 `.env.local`을 로드합니다.
+
+```bash
+docker compose up -d db
+set -a
+source .env.local
+set +a
+```
+
+### 빠른 개발 루프 스크립트 (권장)
+
+반복 개발 시 아래 스크립트를 사용하면 매번 명령을 직접 입력하지 않아도 됩니다.
+
+최초 1회 로컬 환경 파일 자동 생성/점검:
+
+```bash
+bash scripts/setup-local.sh
+```
+
+로컬 DB 실행 + `.env.local` 로드 + backend 로컬 실행:
+
+```bash
+bash scripts/local-dev.sh
+```
+
+로컬 검증(테스트/컴파일):
+
+```bash
+bash scripts/check-local.sh
+```
+
+PR 직전 통합 스모크(db+backend+pipeline):
+
+```bash
+bash scripts/compose-smoke.sh
+```
+
+테스트/컴파일 확인:
+
+```bash
+./mvnw test
+```
+
+```bash
+./mvnw spring-boot:run
 ```
 
 이 경우 PostgreSQL이 필요하며, `.env` 대신 시스템 환경변수 또는 `application.yml` 기본값을 사용합니다.
