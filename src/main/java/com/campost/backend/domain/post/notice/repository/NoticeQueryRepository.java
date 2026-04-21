@@ -1,10 +1,12 @@
 package com.campost.backend.domain.post.notice.repository;
 
+import com.campost.backend.domain.post.notice.dto.NoticeDetailDto;
 import com.campost.backend.domain.post.notice.dto.NoticeDto;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class NoticeQueryRepository {
@@ -20,7 +22,7 @@ public class NoticeQueryRepository {
                 SELECT id, article_id, title, author, category, date, views,
                        source_url, deadline, target, apply_method, published_at, created_at
                 FROM notices
-              ORDER BY COALESCE(published_at, crawled_at, created_at) DESC NULLS LAST, id DESC
+                                ORDER BY COALESCE(published_at, crawled_at, created_at) DESC NULLS LAST, id DESC
                 LIMIT :limit
                 """;
 
@@ -43,4 +45,26 @@ public class NoticeQueryRepository {
                 ))
                 .list();
     }
+
+            public Optional<NoticeDetailDto> findNoticeDetailById(long noticeId) {
+            String sql = """
+                SELECT id, article_id, title, date, body_text, source_url, published_at, created_at
+                FROM notices
+                WHERE id = :noticeId
+                """;
+
+            return jdbcClient.sql(sql)
+                .param("noticeId", noticeId)
+                .query((rs, rowNum) -> new NoticeDetailDto(
+                    rs.getLong("id"),
+                    rs.getString("article_id"),
+                    rs.getString("title"),
+                    rs.getObject("date", java.time.LocalDate.class),
+                    rs.getString("body_text"),
+                    rs.getString("source_url"),
+                    rs.getObject("published_at", java.time.OffsetDateTime.class),
+                    rs.getObject("created_at", java.time.OffsetDateTime.class)
+                ))
+                .optional();
+            }
 }
