@@ -20,7 +20,7 @@ public class NoticeQueryRepository {
                 SELECT id, article_id, title, author, category, date, views,
                        source_url, deadline, target, apply_method, published_at, created_at
                 FROM notices
-                ORDER BY COALESCE(published_at, created_at) DESC
+              ORDER BY COALESCE(published_at, crawled_at, created_at) DESC NULLS LAST, id DESC
                 LIMIT :limit
                 """;
 
