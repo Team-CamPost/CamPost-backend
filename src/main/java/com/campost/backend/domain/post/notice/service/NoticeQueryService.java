@@ -1,10 +1,12 @@
 package com.campost.backend.domain.post.notice.service;
 
+import com.campost.backend.domain.post.notice.dto.NoticeDetailDto;
 import com.campost.backend.domain.post.notice.dto.NoticeDto;
 import com.campost.backend.domain.post.notice.repository.NoticeQueryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class NoticeQueryService {
@@ -21,6 +23,11 @@ public class NoticeQueryService {
 
     public List<NoticeDto> getRecentNotices(int limit) {
         return noticeQueryRepository.findRecentNotices(normalizeLimit(limit));
+    }
+
+    public NoticeDetailDto getNoticeDetail(long noticeId) {
+        return noticeQueryRepository.findNoticeDetailById(noticeId)
+                .orElseThrow(() -> new NoSuchElementException("Notice not found: " + noticeId));
     }
 
     private int normalizeLimit(int limit) {
