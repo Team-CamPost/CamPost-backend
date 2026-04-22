@@ -17,21 +17,45 @@ public class NoticeQueryRepository {
         this.jdbcClient = jdbcClient;
     }
 
-    public List<NoticeDto> findRecentNotices(int limit) {
-        String sql = """
-                SELECT id, article_id, title, author, category, date, views,
-                       source_url, deadline, target, apply_method, published_at, created_at
-                FROM notices
-                                ORDER BY COALESCE(published_at, crawled_at, created_at) DESC NULLS LAST, id DESC
-                LIMIT :limit
-                """;
+    public List<NoticeDto> findNotices(int limit, String deptCode, String sortBy) {
+        boolean hasDeptCode = deptCode != null && !deptCode.isBlank();
 
-        return jdbcClient.sql(sql)
-                .param("limit", limit)
-                .query((rs, rowNum) -> new NoticeDto(
+        StringBuilder sql = new StringBuilder("""
+                SELECT n.id, n.article_id, n.title, cs.department, n.author, n.category, n.date, n.views,
+                       n.source_url, n.deadline, n.target, n.apply_method, n.published_at, n.created_at
+                FROM notices n
+                LEFT JOIN raw_notices rn ON n.raw_notice_id = rn.id
+                LEFT JOIN crawl_sources cs ON rn.source_id = cs.id
+                WHERE 1=1
+                """);
+
+        if (hasDeptCode) {
+            sql.append(" AND cs.dept_code = :deptCode ");
+        }
+
+        if ("deadline".equalsIgnoreCase(sortBy)) {
+            // 마감 임박순 (이미 마감된 공지 제외)
+            sql.append(" AND n.deadline IS NOT NULL AND n.deadline >= CURRENT_DATE ");
+            sql.append(" ORDER BY n.deadline ASC NULLS LAST, n.id DESC ");
+        } else {
+            // 최신순 (기본값)
+            sql.append(" ORDER BY COALESCE(n.published_at, n.crawled_at, n.created_at) DESC NULLS LAST, n.id DESC ");
+        }
+
+        sql.append(" LIMIT :limit");
+
+        var query = jdbcClient.sql(sql.toString())
+                .param("limit", limit);
+
+        if (hasDeptCode) {
+            query = query.param("deptCode", deptCode);
+        }
+
+        return query.query((rs, rowNum) -> new NoticeDto(
                         rs.getLong("id"),
                         rs.getString("article_id"),
                         rs.getString("title"),
+                        rs.getString("department"),
                         rs.getString("author"),
                         rs.getString("category"),
                         rs.getObject("date", java.time.LocalDate.class),
@@ -48,10 +72,12 @@ public class NoticeQueryRepository {
 
     public Optional<NoticeDetailDto> findNoticeDetailById(long noticeId) {
         String sql = """
-                SELECT id, article_id, title, author, category, date, views,
-                       deadline, target, apply_method, body_text, source_url, published_at, created_at
-                FROM notices
-                WHERE id = :noticeId
+                SELECT n.id, n.article_id, n.title, cs.department, n.author, n.category, n.date, n.views,
+                       n.deadline, n.target, n.apply_method, n.body_text, n.source_url, n.published_at, n.created_at
+                FROM notices n
+              LEFT JOIN raw_notices rn ON n.raw_notice_id = rn.id
+              LEFT JOIN crawl_sources cs ON rn.source_id = cs.id
+                WHERE n.id = :noticeId
                 """;
 
         return jdbcClient.sql(sql)
@@ -60,6 +86,7 @@ public class NoticeQueryRepository {
                         rs.getLong("id"),
                         rs.getString("article_id"),
                         rs.getString("title"),
+                        rs.getString("department"),
                         rs.getString("author"),
                         rs.getString("category"),
                         rs.getObject("date", java.time.LocalDate.class),
