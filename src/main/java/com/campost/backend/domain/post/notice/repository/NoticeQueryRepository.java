@@ -18,21 +18,24 @@ public class NoticeQueryRepository {
     }
 
     public List<NoticeDto> findNotices(int limit, String deptCode, String sortBy) {
+        boolean hasDeptCode = deptCode != null && !deptCode.isBlank();
+
         StringBuilder sql = new StringBuilder("""
                 SELECT n.id, n.article_id, n.title, cs.department, n.author, n.category, n.date, n.views,
                        n.source_url, n.deadline, n.target, n.apply_method, n.published_at, n.created_at
                 FROM notices n
-                JOIN raw_notices rn ON n.raw_notice_id = rn.id
-                JOIN crawl_sources cs ON rn.source_id = cs.id
+                LEFT JOIN raw_notices rn ON n.raw_notice_id = rn.id
+                LEFT JOIN crawl_sources cs ON rn.source_id = cs.id
                 WHERE 1=1
                 """);
 
-        if (deptCode != null && !deptCode.isBlank()) {
+        if (hasDeptCode) {
             sql.append(" AND cs.dept_code = :deptCode ");
         }
 
         if ("deadline".equalsIgnoreCase(sortBy)) {
-            // 마감 임박순 (과거 마감일 제외 추가 가능, 일단 정렬만)
+            // 마감 임박순 (이미 마감된 공지 제외)
+            sql.append(" AND n.deadline IS NOT NULL AND n.deadline >= CURRENT_DATE ");
             sql.append(" ORDER BY n.deadline ASC NULLS LAST, n.id DESC ");
         } else {
             // 최신순 (기본값)
@@ -44,7 +47,7 @@ public class NoticeQueryRepository {
         var query = jdbcClient.sql(sql.toString())
                 .param("limit", limit);
 
-        if (deptCode != null && !deptCode.isBlank()) {
+        if (hasDeptCode) {
             query = query.param("deptCode", deptCode);
         }
 
@@ -72,8 +75,8 @@ public class NoticeQueryRepository {
                 SELECT n.id, n.article_id, n.title, cs.department, n.author, n.category, n.date, n.views,
                        n.deadline, n.target, n.apply_method, n.body_text, n.source_url, n.published_at, n.created_at
                 FROM notices n
-                JOIN raw_notices rn ON n.raw_notice_id = rn.id
-                JOIN crawl_sources cs ON rn.source_id = cs.id
+              LEFT JOIN raw_notices rn ON n.raw_notice_id = rn.id
+              LEFT JOIN crawl_sources cs ON rn.source_id = cs.id
                 WHERE n.id = :noticeId
                 """;
 
