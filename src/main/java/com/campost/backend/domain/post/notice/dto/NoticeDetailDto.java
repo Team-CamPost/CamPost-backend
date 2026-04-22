@@ -12,7 +12,13 @@ import java.time.OffsetDateTime;
         "id",
         "articleId",
         "title",
+        "author",
+        "category",
         "date",
+        "views",
+        "deadline",
+        "target",
+        "applyMethod",
         "bodyText",
         "sourceUrl",
         "publishedAt",
@@ -25,8 +31,20 @@ public record NoticeDetailDto(
         String articleId,
         @JsonProperty("title")
         String title,
+        @JsonProperty("author")
+        String author,
+        @JsonProperty("category")
+        String category,
         @JsonProperty("date")
         LocalDate date,
+        @JsonProperty("views")
+        Integer views,
+        @JsonProperty("deadline")
+        LocalDate deadline,
+        @JsonProperty("target")
+        String target,
+        @JsonProperty("applyMethod")
+        String applyMethod,
         @JsonProperty("bodyText")
         String bodyText,
         @JsonProperty("sourceUrl")

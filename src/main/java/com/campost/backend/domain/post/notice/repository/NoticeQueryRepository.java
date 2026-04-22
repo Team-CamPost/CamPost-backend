@@ -46,25 +46,32 @@ public class NoticeQueryRepository {
                 .list();
     }
 
-            public Optional<NoticeDetailDto> findNoticeDetailById(long noticeId) {
-            String sql = """
-                SELECT id, article_id, title, date, body_text, source_url, published_at, created_at
+    public Optional<NoticeDetailDto> findNoticeDetailById(long noticeId) {
+        String sql = """
+                SELECT id, article_id, title, author, category, date, views,
+                       deadline, target, apply_method, body_text, source_url, published_at, created_at
                 FROM notices
                 WHERE id = :noticeId
                 """;
 
-            return jdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("noticeId", noticeId)
                 .query((rs, rowNum) -> new NoticeDetailDto(
-                    rs.getLong("id"),
-                    rs.getString("article_id"),
-                    rs.getString("title"),
-                    rs.getObject("date", java.time.LocalDate.class),
-                    rs.getString("body_text"),
-                    rs.getString("source_url"),
-                    rs.getObject("published_at", java.time.OffsetDateTime.class),
-                    rs.getObject("created_at", java.time.OffsetDateTime.class)
+                        rs.getLong("id"),
+                        rs.getString("article_id"),
+                        rs.getString("title"),
+                        rs.getString("author"),
+                        rs.getString("category"),
+                        rs.getObject("date", java.time.LocalDate.class),
+                        rs.getObject("views", Integer.class),
+                        rs.getObject("deadline", java.time.LocalDate.class),
+                        rs.getString("target"),
+                        rs.getString("apply_method"),
+                        rs.getString("body_text"),
+                        rs.getString("source_url"),
+                        rs.getObject("published_at", java.time.OffsetDateTime.class),
+                        rs.getObject("created_at", java.time.OffsetDateTime.class)
                 ))
                 .optional();
-            }
+    }
 }
