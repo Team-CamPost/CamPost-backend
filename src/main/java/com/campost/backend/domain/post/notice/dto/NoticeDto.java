@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
         "id",
         "articleId",
         "title",
+        "department",
         "author",
         "category",
         "date",
@@ -30,6 +31,8 @@ public record NoticeDto(
         String articleId,
         @JsonProperty("title")
         String title,
+        @JsonProperty("department")
+        String department,
         @JsonProperty("author")
         String author,
         @JsonProperty("category")

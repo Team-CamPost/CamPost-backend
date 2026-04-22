@@ -31,13 +31,19 @@ public class NoticeQueryController {
         this.noticeQueryService = noticeQueryService;
     }
 
-    @Operation(summary = "공지 목록 조회", description = "최신 공지 목록을 조회합니다.")
+    @Operation(summary = "공지 목록 조회", description = "최신 및 마감 임박 공지 목록을 학과별로 조회합니다.")
     @GetMapping
     public ApiResponse<List<NoticeDto>> getNotices(
             @Parameter(description = "조회 개수 (1~100)")
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
+            
+            @Parameter(description = "학과 코드 필터링 (예: cse)", required = false)
+            @RequestParam(required = false) String deptCode,
+            
+            @Parameter(description = "정렬 방식 (recent: 최신순, deadline: 마감임박순)", required = false)
+            @RequestParam(defaultValue = "recent") String sortBy
     ) {
-        return ApiResponse.ok(noticeQueryService.getRecentNotices(limit));
+        return ApiResponse.ok(noticeQueryService.getNotices(limit, deptCode, sortBy));
     }
 
     @Operation(summary = "공지 상세 조회", description = "공지 1건의 상세 정보를 조회합니다.")

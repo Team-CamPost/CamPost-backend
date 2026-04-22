@@ -21,8 +21,8 @@ public class NoticeQueryService {
         this.noticeQueryRepository = noticeQueryRepository;
     }
 
-    public List<NoticeDto> getRecentNotices(int limit) {
-        return noticeQueryRepository.findRecentNotices(normalizeLimit(limit));
+    public List<NoticeDto> getNotices(int limit, String deptCode, String sortBy) {
+        return noticeQueryRepository.findNotices(normalizeLimit(limit), deptCode, sortBy);
     }
 
     public NoticeDetailDto getNoticeDetail(long noticeId) {
