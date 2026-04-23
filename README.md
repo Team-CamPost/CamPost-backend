@@ -1,295 +1,223 @@
 # CamPost Backend
 
-CamPost 백엔드 API 서버입니다.
+CamPost Backend 저장소의 개발 워크플로우와 백엔드 실행 규칙을 정리한 문서입니다.
+교수님/팀원 누구나 동일한 기준으로 이슈 발행, 브랜치 작업, PR 리뷰, 로컬 실행, 통합 스모크 테스트를 진행할 수 있도록 작성했습니다.
 
-- 기술 스택: Spring Boot 3, Java 17, PostgreSQL, JDBC
-- 역할: 크롤러 로그/공지 조회 API 제공
-- 실행 방식: Docker Compose 또는 로컬 Java 실행
+## 1. 개발 전 작업
 
-## 프로젝트 구조
+### 1-1. Issue 발행
 
-```
-CamPost-backend/
-	db/
-		README.md
-	docs/
-		backend-architecture-mvp.md
-	src/
-		main/
-			java/com/campost/backend/
-				global/
-					api/
-					config/
-					exception/
-				domain/
-					auth/
-					collect/
-						query/
-						importer/
-					post/
-						notice/
-					hub/
-					personal/
-					notification/
-					admin/
-					ugc/
-					community/
-					# 공통/운영
-					health/
-			resources/
-				db/migration/
-					V1__collect_schema.sql
-					V2__post_schema.sql
-					V3__user_personal_admin_schema.sql
-					V4__seed_initial_data.sql
-				application.yml
-	Dockerfile
-	docker-compose.yml
-	pom.xml
-```
+- 이슈 하나(브랜치 하나)에서는 하나의 기능만 개발합니다.
+- 이슈 제목 규칙:
+  - [이슈종류] 이슈 제목
+  - 예시: [Feat] example API 구현, [Fix] dev 브랜치 충돌 해결
+- 이슈 템플릿:
+  - .github/ISSUE_TEMPLATE/feature_request.md
+- 이슈 작성 시 필수:
+  - Assignees 지정
+  - Labels 지정
+  - 작업 체크리스트 작성
 
-상세 설계 문서: `docs/backend-architecture-mvp.md`
+### 1-2. 로컬 최신화
 
-## API 엔드포인트
-
-- `GET /api/v1/health`
-- `GET /api/v1/collect/jobs?limit=20`
-- `GET /api/v1/collect/parse-logs?limit=20`
-- `GET /api/v1/notices?limit=20`
-- `POST /api/v1/collect/importer/run`
-
-하위 호환(legacy) 경로도 당분간 유지합니다.
-- `GET /api/v1/crawl/*`
-- `POST /api/v1/importer/*`
-
-요청 헤더 표준:
-
-```json
-{
-	"Authorization": "Bearer <JWT_ACCESS_TOKEN>",
-	"Content-Type": "application/json"
-}
-```
-
-응답은 공통 포맷을 사용합니다.
-
-```json
-{
-	"isSuccess": true,
-	"code": "COMMON200",
-	"message": "요청이 성공했습니다.",
-	"result": []
-}
-```
-
-에러 응답 포맷:
-
-```json
-{
-	"isSuccess": false,
-	"code": "ERROR_CODE",
-	"message": "에러 메시지"
-}
-```
-
-공통 에러 코드:
-
-| HTTP Status | Code | Message |
-| --- | --- | --- |
-| 400 | COMMON400 | 잘못된 요청입니다. |
-| 401 | TOKEN401 | 액세스 토큰이 만료되었습니다. |
-| 401 | TOKEN402 | 유효하지 않은 토큰입니다. |
-| 403 | AUTH403 | 접근 권한이 없습니다. |
-| 404 | COMMON404 | 리소스를 찾을 수 없습니다. |
-| 409 | COMMON409 | 리소스 충돌이 발생했습니다. |
-| 500 | SERVER500 | 서버 내부 오류가 발생했습니다. |
-
-## Swagger(OpenAPI) 문서
-
-백엔드 실행 후 아래 URL에서 API 문서를 확인할 수 있습니다.
-
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
-
-### Swagger 문서 작성 방법
-
-1. 컨트롤러 클래스에 `@Tag` 추가
-2. 각 API 메서드에 `@Operation` 추가
-3. 쿼리 파라미터에는 `@Parameter`로 설명 추가
-
-예시:
-
-```java
-@Tag(name = "Post", description = "공지 컨텐츠 조회 API")
-@RestController
-@RequestMapping("/api/v1/notices")
-public class NoticeQueryController {
-
-	@Operation(summary = "공지 목록 조회", description = "최신 공지 목록을 조회합니다.")
-	@GetMapping
-	public ApiResponse<List<NoticeDto>> getNotices(
-			@Parameter(description = "조회 개수 (1~100)")
-			@RequestParam(defaultValue = "20") int limit
-	) {
-		return ApiResponse.ok(...);
-	}
-}
-```
-
-JWT를 적용할 때는 OpenAPI 보안 스키마 이름(`bearerAuth`)을 기준으로
-`@SecurityRequirement(name = "bearerAuth")`를 엔드포인트에 추가하면 됩니다.
-
-## 실행 방법
-
-### 1) 환경변수 준비
+개발 시작 전 반드시 최신 변경 사항을 반영합니다.
 
 ```bash
-cp .env.example .env
+git fetch
+git pull
 ```
 
-Windows PowerShell/CMD:
+## 2. 브랜치 전략
 
-```bash
-copy .env.example .env
-```
+### 2-1. Git Flow 기반 운영
 
-필수 환경변수(`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`,
-`SPRING_DATASOURCE_PASSWORD`, `APP_CORS_ALLOWED_ORIGINS`,
-`JWT_SECRET`, `JWT_EXPIRY_MS`)는 반드시 실제 값으로 채워야 합니다.
+- dev 브랜치: default 브랜치, 개발 통합용
+- 기능 브랜치: dev에서 분기 후 dev로 병합
 
-값이 비어 있거나 `<REQUIRED>` 같은 placeholder 상태면
-백엔드는 시작 단계에서 즉시 실패하도록 구성되어 있습니다.
+### 2-2. 브랜치 네이밍 규칙
 
-권장 분리 규칙:
+- 규칙: 타입/이슈번호-기능명
+- 예시:
+  - feat/12-init-project
+  - fix/3-add-login
+  - refactor/22-cart-page
+  - docs/15-readme
 
-- `.env`: Docker Compose 실행용 (`db` 호스트 사용)
-- `.env.local`: 로컬 `./mvnw spring-boot:run` 실행용 (`localhost` 호스트 사용)
+사용 타입:
 
-### 2) Docker Compose 실행
+| 타입 | 설명 |
+| --- | --- |
+| chore | 프로젝트 설정 |
+| docs | 문서 수정 |
+| feat | 기능 개발 |
+| fix | 버그 수정 |
+| refactor | 구조 개선 |
+| style | 스타일 수정 |
 
-기본 실행 (DB + Backend + Pipeline):
+## 3. 개발 후 Commit & Push
 
-```bash
-docker compose up --build -d db backend pipeline
-```
+### 3-1. 코드 정리 규칙
 
-이 구성에서는 backend가 `/data/raw`를 주기적으로 스캔하여
-`raw_notices`, `notices` 테이블로 자동 적재합니다.
-
-DB 스키마는 Postgres init.sql 마운트가 아니라 Flyway로 관리합니다.
-기본 마이그레이션 위치는 `src/main/resources/db/migration` 입니다.
-
-현재 버전 분리 기준:
-- `V1`: Collect 도메인 스키마 (crawl_sources/crawl_jobs/parse_logs)
-- `V2`: Post 도메인 스키마 (raw_notices/notices/attachments/import log)
-- `V3`: User/Personal/Admin 스키마 (users/bookmarks/keywords/notifications)
-- `V4`: 초기 시드 데이터 (crawl_sources, admin 사용자)
-
-상태 확인:
-
-```bash
-docker compose ps
-docker compose logs -f backend
-```
-
-헬스체크:
-
-```bash
-curl http://localhost:8080/api/v1/health
-```
-
-Importer 수동 실행:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/collect/importer/run
-```
-
-DB 마이그레이션 이력 확인:
-
-```bash
-docker compose exec db psql -U campost -d campost -c "select * from flyway_schema_history order by installed_rank;"
-```
-
-### 3) Frontend를 컨테이너로 띄우고 싶을 때만
-
-`frontend` 서비스는 profile로 분리되어 있습니다.
-
-```bash
-docker compose --profile frontend up --build -d
-```
-
-## 로컬(Java) 실행
-
-Docker 없이 백엔드만 로컬에서 실행할 수도 있습니다.
-
-Maven이 설치되어 있지 않은 팀원을 위해 Maven Wrapper(`mvnw`)를 사용합니다.
-
-### 로컬 실행용 환경변수 준비
-
-```bash
-cp .env.local.example .env.local
-```
-
-Windows PowerShell/CMD:
-
-```bash
-copy .env.local.example .env.local
-```
-
-DB는 compose로 띄우고, 로컬 실행 전에 `.env.local`을 로드합니다.
-
-```bash
-docker compose up -d db
-set -a
-source .env.local
-set +a
-```
-
-### 빠른 개발 루프 스크립트 (권장)
-
-반복 개발 시 아래 스크립트를 사용하면 매번 명령을 직접 입력하지 않아도 됩니다.
-
-최초 1회 로컬 환경 파일 자동 생성/점검:
-
-```bash
-bash scripts/setup-local.sh
-```
-
-로컬 DB 실행 + `.env.local` 로드 + backend 로컬 실행:
-
-```bash
-bash scripts/local-dev.sh
-```
-
-로컬 검증(테스트/컴파일):
+- 커밋 전 로컬 검증 권장:
 
 ```bash
 bash scripts/check-local.sh
 ```
 
-PR 직전 통합 스모크(db+backend+pipeline):
+- Java 코드는 IDE 포맷터 + 정적 분석 규칙을 준수합니다.
+- dev 브랜치 직접 push는 금지합니다.
+
+### 3-2. 커밋 메시지 규칙
+
+- 규칙: 타입: 커밋 설명 (#이슈번호)
+- 예시:
 
 ```bash
+git commit -m "feat: 로그인 구현 (#9)"
+git commit -m "fix: 카드 페이지 수정 (#10)"
+git commit -m "refactor: 아이콘 리팩토링 (#13)"
+```
+
+- 커밋 Body에는 변경 이유와 테스트 내용을 상세히 작성합니다.
+
+## 4. PR 생성 및 Merge
+
+### 4-1. PR 제목/본문 규칙
+
+- PR 제목 규칙: 타입(#이슈번호): 핵심 PR 내용
+- 예시:
+  - Feat(#9): 로그인 구현
+  - Fix(#10): 카드 페이지 수정
+  - Refactor(#13): 아이콘 리팩토링
+- PR 템플릿:
+  - .github/pull_request_template.md
+
+### 4-2. 리뷰 및 머지 규칙
+
+- PR 작성 후 Reviewer, Assignee, Label을 지정합니다.
+- 테스트 결과(스크린샷 또는 로그)를 PR에 첨부합니다.
+- dev 브랜치 머지는 1명 이상의 Approve 이후 진행합니다.
+
+## 5. 표준 개발 워크플로우
+
+아래 순서로 팀 협업을 진행합니다.
+
+1. Issue 발행
+2. 브랜치 생성 (타입/이슈번호-기능명)
+3. 기능 개발 및 테스트
+4. Commit & Push
+5. PR 생성 (템플릿 작성 + 테스트 결과 첨부)
+6. 코드 리뷰 반영
+7. Approve 후 dev 머지
+
+## 6. 백엔드 개발 실행 가이드 (스크립트 기준)
+
+### 6-1. 코드를 수정할 때마다 backend 컨테이너를 중지해야 하나요?
+
+아닙니다. 평소 개발에서는 backend를 컨테이너로 띄우지 않고 로컬에서 실행하는 방식이 가장 효율적입니다.
+
+- 평소 개발 권장 방식:
+  - docker compose up -d --build 를 매번 사용하지 않음
+  - scripts/local-dev.sh 실행
+  - 이 스크립트는 DB만 도커로 띄우고 backend는 로컬 터미널에서 실행
+- 코드 수정 후 반영 방법:
+  - local-dev.sh 실행 터미널에서 Ctrl + C
+  - 다시 scripts/local-dev.sh 실행
+  - 도커 재빌드 없이 수정 사항 즉시 반영
+
+### 6-2. PR(Merge) 전 최종 테스트는 compose-smoke.sh로 하나요?
+
+네. 정확합니다.
+
+- 목적:
+  - 로컬에서만 동작하는 코드가 아니라, 도커 통합 환경에서도 정상 동작하는지 검증
+- scripts/compose-smoke.sh는 다음 통합 구성을 대상으로 스모크 테스트를 수행:
+  - db + backend + pipeline
+- 즉, 프론트엔드를 제외한 핵심 백엔드 시스템이 실제 배포 유사 환경에서 정상 기동되는지 확인하는 단계입니다.
+
+### 6-3. compose-smoke.sh 실행 전에 무엇을 꺼야 하나요?
+
+- 도커 컨테이너는 수동으로 미리 내릴 필요가 없습니다.
+- compose-smoke.sh가 --build 옵션으로 최신 코드 기준 재조립/재기동을 수행합니다.
+- 주의할 점:
+  - local-dev.sh로 실행 중인 로컬 backend 서버는 반드시 Ctrl + C로 종료 후 실행
+  - 종료하지 않으면 8080 포트 충돌이 발생할 수 있습니다.
+
+## 7. 프로젝트 폴더 구조
+
+아래는 backend 저장소의 핵심 구조입니다.
+
+```text
+CamPost-backend/
+├─ .github/
+│  ├─ ISSUE_TEMPLATE/
+│  │  └─ feature_request.md
+│  └─ pull_request_template.md
+├─ db/
+│  └─ README.md
+├─ docs/
+│  └─ backend-architecture-mvp.md
+├─ scripts/
+│  ├─ setup-local.sh
+│  ├─ local-dev.sh
+│  ├─ check-local.sh
+│  └─ compose-smoke.sh
+├─ src/
+│  └─ main/
+│     ├─ java/com/campost/backend/
+│     │  ├─ global/            # 공통 설정/예외/응답
+│     │  └─ domain/            # 도메인별 비즈니스 로직
+│     │     ├─ auth/
+│     │     ├─ collect/
+│     │     │  ├─ query/
+│     │     │  └─ importer/
+│     │     ├─ post/
+│     │     │  └─ notice/
+│     │     ├─ hub/
+│     │     ├─ personal/
+│     │     ├─ notification/
+│     │     ├─ admin/
+│     │     ├─ ugc/
+│     │     ├─ community/
+│     │     └─ health/
+│     └─ resources/
+│        ├─ db/migration/
+│        │  ├─ V1__collect_schema.sql
+│        │  ├─ V2__post_schema.sql
+│        │  ├─ V3__user_personal_admin_schema.sql
+│        │  └─ V4__seed_initial_data.sql
+│        └─ application.yml
+├─ .env.example
+├─ .env.local.example
+├─ docker-compose.yml
+├─ Dockerfile
+├─ pom.xml
+├─ mvnw
+└─ README.md
+```
+
+## 8. 빠른 실행 명령어
+
+```bash
+# 로컬 개발 (권장)
+bash scripts/setup-local.sh
+bash scripts/local-dev.sh
+
+# 로컬 검증
+bash scripts/check-local.sh
+
+# PR 전 통합 스모크 테스트
 bash scripts/compose-smoke.sh
 ```
 
-테스트/컴파일 확인:
+## 9. 백엔드 API/문서 확인
 
-```bash
-./mvnw test
-```
+- Health: http://localhost:8080/api/v1/health
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
 
-```bash
-./mvnw spring-boot:run
-```
+## 10. 협업 원칙 요약
 
-이 경우 PostgreSQL이 필요하며, `.env` 대신 시스템 환경변수 또는 `application.yml` 기본값을 사용합니다.
-
-## 팀 개발 규칙
-
-- 기능별 패키지(`domain/*`) 안에서 `controller -> service -> repository` 흐름 유지
-- 공통 설정/응답/예외는 `global/*`에만 위치
-- DB 접근 SQL은 repository 계층에 집중
-- 신규 MVP 기능은 `auth/collect/post/hub/personal/notification/admin` 도메인 기준으로 추가
-- 후순위 기능은 `ugc/community` 도메인에 스캐폴딩 후 점진 구현
-- 스키마 변경은 `src/main/resources/db/migration` 에 버전 파일로 추가 (`V{N}__*.sql`)
+- 작은 단위 이슈/브랜치/PR로 나눠 작업합니다.
+- 규칙 기반 네이밍과 템플릿으로 커뮤니케이션 비용을 줄입니다.
+- 로컬 개발 효율(local-dev)과 배포 유사 검증(compose-smoke)을 분리해 품질을 관리합니다.
