@@ -8,16 +8,12 @@ public record SignupResponse(
         String username,
 
         @Schema(description = "이메일", example = "campost@example.com")
-        String email,
-
-        @Schema(description = "닉네임", example = "캠포스트")
-        String nickname
+        String email
 ) {
     public static SignupResponse from(SignupRequest request) {
         return new SignupResponse(
                 request.username(),
-                request.email(),
-                request.nickname()
+                request.email()
         );
     }
 }

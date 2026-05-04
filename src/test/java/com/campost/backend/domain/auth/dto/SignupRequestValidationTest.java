@@ -15,8 +15,7 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "campost123",
                 "campost@example.com",
-                "password123",
-                "캠포스트"
+                "password123"
         );
 
         assertThat(validator.validate(request)).isEmpty();
@@ -27,13 +26,12 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "",
                 "",
-                "",
                 ""
         );
 
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("username", "email", "password", "nickname");
+                .contains("username", "email", "password");
     }
 
     @Test
@@ -41,8 +39,7 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "campost123",
                 "invalid-email",
-                "password123",
-                "캠포스트"
+                "password123"
         );
 
         assertThat(validator.validate(request))
@@ -54,8 +51,7 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "campost123",
                 "campost@example.com",
-                "password",
-                "캠포스트"
+                "password"
         );
 
         assertThat(validator.validate(request))
@@ -67,8 +63,7 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "campost123",
                 "campost@example.com",
-                "abc123",
-                "캠포스트"
+                "abc123"
         );
 
         assertThat(validator.validate(request))

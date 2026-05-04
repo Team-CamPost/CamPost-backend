@@ -25,7 +25,7 @@ public class AuthController {
 
     @Operation(
             summary = "회원가입",
-            description = "아이디, 이메일, 비밀번호, 닉네임을 검증하고 회원가입 응답 형식을 반환합니다."
+            description = "아이디, 이메일, 비밀번호를 검증하고 회원가입 응답 형식을 반환합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

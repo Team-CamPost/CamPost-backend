@@ -28,11 +28,6 @@ public record SignupRequest(
                 regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$",
                 message = "비밀번호는 영문과 숫자를 모두 포함해 8자 이상으로 입력해주세요."
         )
-        String password,
-
-        @Schema(description = "닉네임", example = "캠포스트")
-        @NotBlank(message = "닉네임을 입력해주세요.")
-        @Size(min = 2, max = 30, message = "닉네임은 2~30자로 입력해주세요.")
-        String nickname
+        String password
 ) {
 }
