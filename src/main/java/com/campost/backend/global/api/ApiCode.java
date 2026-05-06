@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 public enum ApiCode {
     COMMON200(HttpStatus.OK, "COMMON200", "요청이 성공했습니다."),
     AUTH201(HttpStatus.CREATED, "AUTH201", "회원가입 요청 형식 검증에 성공했습니다."),
+    AUTH409(HttpStatus.CONFLICT, "AUTH409", "이미 가입된 이메일입니다."),
     COMMON400(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
     TOKEN401(HttpStatus.UNAUTHORIZED, "TOKEN401", "액세스 토큰이 만료되었습니다."),
     TOKEN402(HttpStatus.UNAUTHORIZED, "TOKEN402", "유효하지 않은 토큰입니다."),

@@ -6,4 +6,6 @@ import com.campost.backend.domain.auth.model.User;
 public interface UserRepository {
 
     User save(SignupUserCreateCommand command);
+
+    boolean existsByEmail(String email);
 }
