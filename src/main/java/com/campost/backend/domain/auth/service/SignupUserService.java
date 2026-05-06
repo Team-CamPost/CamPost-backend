@@ -1,6 +1,7 @@
 package com.campost.backend.domain.auth.service;
 
 import com.campost.backend.domain.auth.dto.SignupRequest;
+import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
@@ -23,6 +24,10 @@ public class SignupUserService {
 
     @Transactional
     public User saveUser(SignupRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DuplicatedEmailException();
+        }
+
         String passwordHash = passwordHashService.hash(request.password());
 
         return userRepository.save(new SignupUserCreateCommand(

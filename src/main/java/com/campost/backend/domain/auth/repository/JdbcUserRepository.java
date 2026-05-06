@@ -36,4 +36,20 @@ public class JdbcUserRepository implements UserRepository {
                 ))
                 .single();
     }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        String sql = """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM users
+                    WHERE email = :email
+                )
+                """;
+
+        return Boolean.TRUE.equals(jdbcClient.sql(sql)
+                .param("email", email)
+                .query(Boolean.class)
+                .single());
+    }
 }

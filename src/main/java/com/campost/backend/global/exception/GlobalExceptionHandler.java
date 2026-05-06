@@ -1,5 +1,6 @@
 package com.campost.backend.global.exception;
 
+import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -61,6 +62,11 @@ public class GlobalExceptionHandler {
         return toResponse(ApiCode.COMMON409);
     }
 
+    @ExceptionHandler(DuplicatedEmailException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicatedEmail(DuplicatedEmailException ex) {
+        return toResponse(ApiCode.AUTH409, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         return toResponse(ApiCode.SERVER500);
@@ -69,5 +75,10 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> toResponse(ApiCode code) {
         return ResponseEntity.status(Objects.requireNonNull(code.httpStatus()))
                 .body(ErrorResponse.of(code));
+    }
+
+    private ResponseEntity<ErrorResponse> toResponse(ApiCode code, String message) {
+        return ResponseEntity.status(Objects.requireNonNull(code.httpStatus()))
+                .body(ErrorResponse.of(code, message));
     }
 }
