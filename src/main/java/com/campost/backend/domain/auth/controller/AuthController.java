@@ -2,6 +2,7 @@ package com.campost.backend.domain.auth.controller;
 
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
+import com.campost.backend.domain.auth.service.SignupUserService;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ApiResponse;
 import com.campost.backend.global.api.ErrorResponse;
@@ -22,6 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private final SignupUserService signupUserService;
+
+    public AuthController(SignupUserService signupUserService) {
+        this.signupUserService = signupUserService;
+    }
 
     @Operation(
             summary = "회원가입",
@@ -49,6 +56,6 @@ public class AuthController {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(ApiCode.AUTH201, SignupResponse.from(request)));
+                .body(ApiResponse.ok(ApiCode.AUTH201, SignupResponse.from(signupUserService.saveUser(request))));
     }
 }

@@ -1,5 +1,6 @@
 package com.campost.backend.domain.auth.dto;
 
+import com.campost.backend.domain.auth.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "회원가입 응답")
@@ -14,6 +15,13 @@ public record SignupResponse(
         return new SignupResponse(
                 request.username(),
                 request.email()
+        );
+    }
+
+    public static SignupResponse from(User user) {
+        return new SignupResponse(
+                user.username(),
+                user.email()
         );
     }
 }
