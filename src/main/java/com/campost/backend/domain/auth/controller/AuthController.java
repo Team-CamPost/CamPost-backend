@@ -4,6 +4,7 @@ import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
 import com.campost.backend.domain.auth.dto.UsernameAvailabilityResponse;
 import com.campost.backend.domain.auth.service.SignupUserService;
+import com.campost.backend.domain.auth.validation.AuthValidationRules;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ApiResponse;
 import com.campost.backend.global.api.ErrorResponse;
@@ -89,8 +90,8 @@ public class AuthController {
     public ApiResponse<UsernameAvailabilityResponse> checkUsername(
             @RequestParam
             @Pattern(
-                    regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,20}$",
-                    message = "아이디는 영문과 숫자를 모두 포함해 6~20자로 입력해주세요."
+                    regexp = AuthValidationRules.USERNAME_PATTERN,
+                    message = AuthValidationRules.USERNAME_MESSAGE
             )
             String username
     ) {

@@ -1,5 +1,6 @@
 package com.campost.backend.domain.auth.dto;
 
+import com.campost.backend.domain.auth.validation.AuthValidationRules;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,8 +12,8 @@ public record SignupRequest(
         @Schema(description = "아이디", example = "campost123")
         @NotBlank(message = "아이디를 입력해주세요.")
         @Pattern(
-                regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,20}$",
-                message = "아이디는 영문과 숫자를 모두 포함해 6~20자로 입력해주세요."
+                regexp = AuthValidationRules.USERNAME_PATTERN,
+                message = AuthValidationRules.USERNAME_MESSAGE
         )
         String username,
 
@@ -25,8 +26,8 @@ public record SignupRequest(
         @Schema(description = "비밀번호", example = "password123")
         @NotBlank(message = "비밀번호를 입력해주세요.")
         @Pattern(
-                regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$",
-                message = "비밀번호는 영문과 숫자를 모두 포함해 8자 이상으로 입력해주세요."
+                regexp = AuthValidationRules.PASSWORD_PATTERN,
+                message = AuthValidationRules.PASSWORD_MESSAGE
         )
         String password
 ) {
