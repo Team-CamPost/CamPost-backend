@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicatedEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicatedEmail(DuplicatedEmailException ex) {
-        return toResponse(ApiCode.AUTH409, ex.getMessage());
+        return toResponse(ApiCode.AUTH409);
     }
 
     @ExceptionHandler(Exception.class)
@@ -75,10 +75,5 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> toResponse(ApiCode code) {
         return ResponseEntity.status(Objects.requireNonNull(code.httpStatus()))
                 .body(ErrorResponse.of(code));
-    }
-
-    private ResponseEntity<ErrorResponse> toResponse(ApiCode code, String message) {
-        return ResponseEntity.status(Objects.requireNonNull(code.httpStatus()))
-                .body(ErrorResponse.of(code, message));
     }
 }

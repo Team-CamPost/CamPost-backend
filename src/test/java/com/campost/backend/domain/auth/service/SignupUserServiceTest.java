@@ -71,9 +71,24 @@ class SignupUserServiceTest {
         assertThat(userRepository.savedCommand.email()).isEqualTo(request.email());
     }
 
+    @Test
+    void saveUserNormalizesEmailBeforeDuplicateCheckAndSave() {
+        SignupRequest request = new SignupRequest(
+                "campost123",
+                " User@example.com ",
+                "password123"
+        );
+
+        signupUserService.saveUser(request);
+
+        assertThat(userRepository.checkedEmail).isEqualTo("user@example.com");
+        assertThat(userRepository.savedCommand.email()).isEqualTo("user@example.com");
+    }
+
     private static class FakeUserRepository implements UserRepository {
 
         private SignupUserCreateCommand savedCommand;
+        private String checkedEmail;
         private boolean emailExists;
 
         @Override
@@ -92,6 +107,7 @@ class SignupUserServiceTest {
 
         @Override
         public boolean existsByEmail(String email) {
+            this.checkedEmail = email;
             return emailExists;
         }
     }
