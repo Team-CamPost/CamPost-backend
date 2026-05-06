@@ -1,0 +1,39 @@
+package com.campost.backend.domain.auth.repository;
+
+import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
+import com.campost.backend.domain.auth.model.User;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class JdbcUserRepository implements UserRepository {
+
+    private final JdbcClient jdbcClient;
+
+    public JdbcUserRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    @Override
+    public User save(SignupUserCreateCommand command) {
+        String sql = """
+                INSERT INTO users (username, email, password_hash, role)
+                VALUES (:username, :email, :passwordHash, 'GUEST')
+                RETURNING id, username, email, password_hash, role, created_at
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("username", command.username())
+                .param("email", command.email())
+                .param("passwordHash", command.passwordHash())
+                .query((rs, rowNum) -> new User(
+                        rs.getLong("id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password_hash"),
+                        rs.getString("role"),
+                        rs.getObject("created_at", java.time.OffsetDateTime.class)
+                ))
+                .single();
+    }
+}
