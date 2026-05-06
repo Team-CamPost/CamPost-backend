@@ -8,4 +8,6 @@ public interface UserRepository {
     User save(SignupUserCreateCommand command);
 
     boolean existsByEmail(String email);
+
+    boolean existsByUsername(String username);
 }

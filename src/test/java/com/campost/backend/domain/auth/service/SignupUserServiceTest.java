@@ -2,6 +2,7 @@ package com.campost.backend.domain.auth.service;
 
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
+import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
@@ -57,6 +58,23 @@ class SignupUserServiceTest {
     }
 
     @Test
+    void saveUserThrowsExceptionWhenUsernameAlreadyExists() {
+        SignupRequest request = new SignupRequest(
+                "campost123",
+                "campost@example.com",
+                "password123"
+        );
+        userRepository.usernameExists = true;
+
+        assertThatThrownBy(() -> signupUserService.saveUser(request))
+                .isInstanceOf(DuplicatedUsernameException.class)
+                .hasMessage("이미 사용 중인 아이디입니다.");
+
+        assertThat(userRepository.savedCommand).isNull();
+        assertThat(userRepository.checkedEmail).isNull();
+    }
+
+    @Test
     void saveUserStoresUserWhenEmailDoesNotExist() {
         SignupRequest request = new SignupRequest(
                 "campost123",
@@ -85,11 +103,47 @@ class SignupUserServiceTest {
         assertThat(userRepository.savedCommand.email()).isEqualTo("user@example.com");
     }
 
+    @Test
+    void saveUserTrimsUsernameBeforeDuplicateCheckAndSave() {
+        SignupRequest request = new SignupRequest(
+                " campost123 ",
+                "campost@example.com",
+                "password123"
+        );
+
+        signupUserService.saveUser(request);
+
+        assertThat(userRepository.checkedUsername).isEqualTo("campost123");
+        assertThat(userRepository.savedCommand.username()).isEqualTo("campost123");
+    }
+
+    @Test
+    void isUsernameAvailableReturnsFalseWhenUsernameExists() {
+        userRepository.usernameExists = true;
+
+        boolean available = signupUserService.isUsernameAvailable(" campost123 ");
+
+        assertThat(available).isFalse();
+        assertThat(userRepository.checkedUsername).isEqualTo("campost123");
+    }
+
+    @Test
+    void isUsernameAvailableReturnsTrueWhenUsernameDoesNotExist() {
+        userRepository.usernameExists = false;
+
+        boolean available = signupUserService.isUsernameAvailable("campost123");
+
+        assertThat(available).isTrue();
+        assertThat(userRepository.checkedUsername).isEqualTo("campost123");
+    }
+
     private static class FakeUserRepository implements UserRepository {
 
         private SignupUserCreateCommand savedCommand;
         private String checkedEmail;
+        private String checkedUsername;
         private boolean emailExists;
+        private boolean usernameExists;
 
         @Override
         public User save(SignupUserCreateCommand command) {
@@ -109,6 +163,12 @@ class SignupUserServiceTest {
         public boolean existsByEmail(String email) {
             this.checkedEmail = email;
             return emailExists;
+        }
+
+        @Override
+        public boolean existsByUsername(String username) {
+            this.checkedUsername = username;
+            return usernameExists;
         }
     }
 }
