@@ -1,6 +1,7 @@
 package com.campost.backend.global.exception;
 
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
+import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -59,12 +60,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
+        if (containsMessage(ex, "ux_users_username")) {
+            return toResponse(ApiCode.AUTH409_USERNAME);
+        }
+
         return toResponse(ApiCode.COMMON409);
     }
 
     @ExceptionHandler(DuplicatedEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicatedEmail(DuplicatedEmailException ex) {
         return toResponse(ApiCode.AUTH409);
+    }
+
+    @ExceptionHandler(DuplicatedUsernameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicatedUsername(DuplicatedUsernameException ex) {
+        return toResponse(ApiCode.AUTH409_USERNAME);
     }
 
     @ExceptionHandler(Exception.class)
@@ -75,5 +85,21 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> toResponse(ApiCode code) {
         return ResponseEntity.status(Objects.requireNonNull(code.httpStatus()))
                 .body(ErrorResponse.of(code));
+    }
+
+    private boolean containsMessage(Throwable throwable, String value) {
+        Throwable current = throwable;
+
+        while (current != null) {
+            String message = current.getMessage();
+
+            if (message != null && message.contains(value)) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 }

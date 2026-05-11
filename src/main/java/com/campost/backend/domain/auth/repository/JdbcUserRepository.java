@@ -52,4 +52,20 @@ public class JdbcUserRepository implements UserRepository {
                 .query(Boolean.class)
                 .single());
     }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        String sql = """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM users
+                    WHERE username = :username
+                )
+                """;
+
+        return Boolean.TRUE.equals(jdbcClient.sql(sql)
+                .param("username", username)
+                .query(Boolean.class)
+                .single());
+    }
 }
