@@ -68,4 +68,21 @@ public class JdbcEmailVerificationRepository implements EmailVerificationReposit
                 .param("verifiedAt", verifiedAt)
                 .update();
     }
+
+    @Override
+    public boolean existsVerifiedEmail(String email) {
+        String sql = """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM email_verification_codes
+                    WHERE email = :email
+                      AND verified_at IS NOT NULL
+                )
+                """;
+
+        return Boolean.TRUE.equals(jdbcClient.sql(sql)
+                .param("email", email)
+                .query(Boolean.class)
+                .single());
+    }
 }

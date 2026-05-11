@@ -202,6 +202,11 @@ class EmailVerificationServiceTest {
             this.verifiedEmail = email;
             this.verifiedAt = verifiedAt;
         }
+
+        @Override
+        public boolean existsVerifiedEmail(String email) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
     }
 
     private static class FakeVerificationCodeGenerator implements VerificationCodeGenerator {
