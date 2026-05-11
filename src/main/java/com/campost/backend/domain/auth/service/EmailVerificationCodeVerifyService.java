@@ -37,8 +37,9 @@ public class EmailVerificationCodeVerifyService {
     public OffsetDateTime verify(String email, String code) {
         EmailVerificationCode verificationCode = emailVerificationRepository.findByEmail(email)
                 .orElseThrow(InvalidEmailVerificationCodeException::new);
+        OffsetDateTime now = OffsetDateTime.now(clock);
 
-        if (isExpired(verificationCode)) {
+        if (!verificationCode.expiresAt().isAfter(now)) {
             throw new InvalidEmailVerificationCodeException();
         }
 
@@ -46,12 +47,7 @@ public class EmailVerificationCodeVerifyService {
             throw new InvalidEmailVerificationCodeException();
         }
 
-        OffsetDateTime verifiedAt = OffsetDateTime.now(clock);
-        emailVerificationRepository.markVerified(email, verifiedAt);
-        return verifiedAt;
-    }
-
-    private boolean isExpired(EmailVerificationCode verificationCode) {
-        return !verificationCode.expiresAt().isAfter(OffsetDateTime.now(clock));
+        emailVerificationRepository.markVerified(email, now);
+        return now;
     }
 }
