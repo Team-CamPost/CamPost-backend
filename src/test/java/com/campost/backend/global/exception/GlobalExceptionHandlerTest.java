@@ -1,5 +1,6 @@
 package com.campost.backend.global.exception;
 
+import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.global.api.ErrorResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,5 +37,16 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(409);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().code()).isEqualTo("COMMON409");
+    }
+
+    @Test
+    void handleInvalidEmailVerificationCodeReturnsAuthBadRequestResponse() {
+        ResponseEntity<ErrorResponse> response = handler.handleInvalidEmailVerificationCode(
+                new InvalidEmailVerificationCodeException()
+        );
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("AUTH400_EMAIL_VERIFICATION");
     }
 }
