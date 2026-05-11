@@ -1,8 +1,11 @@
 package com.campost.backend.domain.auth.controller;
 
+import com.campost.backend.domain.auth.dto.EmailVerificationCodeRequest;
+import com.campost.backend.domain.auth.dto.EmailVerificationCodeResponse;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
 import com.campost.backend.domain.auth.dto.UsernameAvailabilityResponse;
+import com.campost.backend.domain.auth.service.EmailVerificationService;
 import com.campost.backend.domain.auth.service.SignupUserService;
 import com.campost.backend.domain.auth.validation.AuthValidationRules;
 import com.campost.backend.global.api.ApiCode;
@@ -32,9 +35,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final SignupUserService signupUserService;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(SignupUserService signupUserService) {
+    public AuthController(
+            SignupUserService signupUserService,
+            EmailVerificationService emailVerificationService
+    ) {
         this.signupUserService = signupUserService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Operation(
@@ -99,5 +107,32 @@ public class AuthController {
                 username.trim(),
                 signupUserService.isUsernameAvailable(username)
         ));
+    }
+
+    @Operation(
+            summary = "이메일 인증번호 전송",
+            description = "회원가입에 사용할 이메일로 인증번호를 전송합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "이메일 인증번호 전송 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 가입된 이메일",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PostMapping("/email/verification-code")
+    public ApiResponse<EmailVerificationCodeResponse> sendEmailVerificationCode(
+            @Valid @RequestBody EmailVerificationCodeRequest request
+    ) {
+        return ApiResponse.ok(emailVerificationService.sendCode(request));
     }
 }
