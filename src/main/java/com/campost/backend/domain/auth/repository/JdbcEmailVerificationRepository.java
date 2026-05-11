@@ -16,13 +16,13 @@ public class JdbcEmailVerificationRepository implements EmailVerificationReposit
     @Override
     public void saveCode(EmailVerificationCodeCreateCommand command) {
         String sql = """
-                INSERT INTO email_verification_codes (email, code_hash, expires_at, verified_at)
-                VALUES (:email, :codeHash, :expiresAt, NULL)
+                INSERT INTO email_verification_codes (email, code_hash, expires_at, verified_at, issued_at)
+                VALUES (:email, :codeHash, :expiresAt, NULL, now())
                 ON CONFLICT (email) DO UPDATE SET
                     code_hash = EXCLUDED.code_hash,
                     expires_at = EXCLUDED.expires_at,
                     verified_at = NULL,
-                    created_at = now()
+                    issued_at = now()
                 """;
 
         jdbcClient.sql(sql)

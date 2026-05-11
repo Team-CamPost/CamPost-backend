@@ -28,15 +28,17 @@ class EmailVerificationServiceTest {
     private final FakeUserRepository userRepository = new FakeUserRepository();
     private final FakeEmailVerificationRepository emailVerificationRepository =
             new FakeEmailVerificationRepository();
-    private final PasswordHashService passwordHashService = new PasswordHashService();
+    private final EmailVerificationCodeIssueService emailVerificationCodeIssueService =
+            new EmailVerificationCodeIssueService(userRepository, emailVerificationRepository);
+    private final VerificationCodeHashService verificationCodeHashService =
+            new VerificationCodeHashService();
     private final FakeVerificationCodeGenerator verificationCodeGenerator =
             new FakeVerificationCodeGenerator();
     private final FakeEmailVerificationSender emailVerificationSender =
             new FakeEmailVerificationSender();
     private final EmailVerificationService emailVerificationService = new EmailVerificationService(
-            userRepository,
-            emailVerificationRepository,
-            passwordHashService,
+            emailVerificationCodeIssueService,
+            verificationCodeHashService,
             verificationCodeGenerator,
             emailVerificationSender,
             FIXED_CLOCK
@@ -53,7 +55,7 @@ class EmailVerificationServiceTest {
         assertThat(savedCommand.email()).isEqualTo("user@example.com");
         assertThat(savedCommand.codeHash()).isNotEqualTo("123456");
         assertThat(savedCommand.codeHash()).doesNotContain("123456");
-        assertThat(passwordHashService.matches("123456", savedCommand.codeHash())).isTrue();
+        assertThat(verificationCodeHashService.matches("123456", savedCommand.codeHash())).isTrue();
         assertThat(savedCommand.expiresAt()).isEqualTo(OffsetDateTime.now(FIXED_CLOCK).plusMinutes(5));
         assertThat(emailVerificationSender.sentEmail).isEqualTo("user@example.com");
         assertThat(emailVerificationSender.sentCode).isEqualTo("123456");
