@@ -2,7 +2,11 @@ package com.campost.backend.domain.auth.service;
 
 import com.campost.backend.domain.auth.dto.EmailVerificationCodeRequest;
 import com.campost.backend.domain.auth.dto.EmailVerificationCodeResponse;
+import com.campost.backend.domain.auth.dto.EmailVerificationCheckRequest;
+import com.campost.backend.domain.auth.dto.EmailVerificationCheckResponse;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
+import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
+import com.campost.backend.domain.auth.model.EmailVerificationCode;
 import com.campost.backend.domain.auth.model.EmailVerificationCodeCreateCommand;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
@@ -14,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,12 +37,19 @@ class EmailVerificationServiceTest {
             new EmailVerificationCodeIssueService(userRepository, emailVerificationRepository);
     private final VerificationCodeHashService verificationCodeHashService =
             new VerificationCodeHashService();
+    private final EmailVerificationCodeVerifyService emailVerificationCodeVerifyService =
+            new EmailVerificationCodeVerifyService(
+                    emailVerificationRepository,
+                    verificationCodeHashService,
+                    FIXED_CLOCK
+            );
     private final FakeVerificationCodeGenerator verificationCodeGenerator =
             new FakeVerificationCodeGenerator();
     private final FakeEmailVerificationSender emailVerificationSender =
             new FakeEmailVerificationSender();
     private final EmailVerificationService emailVerificationService = new EmailVerificationService(
             emailVerificationCodeIssueService,
+            emailVerificationCodeVerifyService,
             verificationCodeHashService,
             verificationCodeGenerator,
             emailVerificationSender,
@@ -77,6 +89,67 @@ class EmailVerificationServiceTest {
     }
 
     @Test
+    void verifyCodeMarksEmailVerified() {
+        EmailVerificationCheckRequest request = new EmailVerificationCheckRequest(
+                " User@example.com ",
+                "123456"
+        );
+        emailVerificationRepository.savedVerificationCode = new EmailVerificationCode(
+                "user@example.com",
+                verificationCodeHashService.hash("123456"),
+                OffsetDateTime.now(FIXED_CLOCK).plusMinutes(5),
+                null
+        );
+
+        EmailVerificationCheckResponse response = emailVerificationService.verifyCode(request);
+
+        assertThat(emailVerificationRepository.checkedEmail).isEqualTo("user@example.com");
+        assertThat(emailVerificationRepository.verifiedEmail).isEqualTo("user@example.com");
+        assertThat(emailVerificationRepository.verifiedAt).isEqualTo(OffsetDateTime.now(FIXED_CLOCK));
+        assertThat(response.email()).isEqualTo("user@example.com");
+        assertThat(response.verified()).isTrue();
+        assertThat(response.verifiedAt()).isEqualTo(OffsetDateTime.now(FIXED_CLOCK));
+    }
+
+    @Test
+    void verifyCodeThrowsExceptionWhenCodeDoesNotMatch() {
+        EmailVerificationCheckRequest request = new EmailVerificationCheckRequest(
+                "campost@example.com",
+                "000000"
+        );
+        emailVerificationRepository.savedVerificationCode = new EmailVerificationCode(
+                "campost@example.com",
+                verificationCodeHashService.hash("123456"),
+                OffsetDateTime.now(FIXED_CLOCK).plusMinutes(5),
+                null
+        );
+
+        assertThatThrownBy(() -> emailVerificationService.verifyCode(request))
+                .isInstanceOf(InvalidEmailVerificationCodeException.class);
+
+        assertThat(emailVerificationRepository.verifiedEmail).isNull();
+    }
+
+    @Test
+    void verifyCodeThrowsExceptionWhenCodeExpired() {
+        EmailVerificationCheckRequest request = new EmailVerificationCheckRequest(
+                "campost@example.com",
+                "123456"
+        );
+        emailVerificationRepository.savedVerificationCode = new EmailVerificationCode(
+                "campost@example.com",
+                verificationCodeHashService.hash("123456"),
+                OffsetDateTime.now(FIXED_CLOCK).minusSeconds(1),
+                null
+        );
+
+        assertThatThrownBy(() -> emailVerificationService.verifyCode(request))
+                .isInstanceOf(InvalidEmailVerificationCodeException.class);
+
+        assertThat(emailVerificationRepository.verifiedEmail).isNull();
+    }
+
+    @Test
     void randomVerificationCodeGeneratorCreatesSixDigitCode() {
         RandomVerificationCodeGenerator generator = new RandomVerificationCodeGenerator();
 
@@ -108,10 +181,26 @@ class EmailVerificationServiceTest {
     private static class FakeEmailVerificationRepository implements EmailVerificationRepository {
 
         private EmailVerificationCodeCreateCommand savedCommand;
+        private EmailVerificationCode savedVerificationCode;
+        private String checkedEmail;
+        private String verifiedEmail;
+        private OffsetDateTime verifiedAt;
 
         @Override
         public void saveCode(EmailVerificationCodeCreateCommand command) {
             this.savedCommand = command;
+        }
+
+        @Override
+        public Optional<EmailVerificationCode> findByEmail(String email) {
+            this.checkedEmail = email;
+            return Optional.ofNullable(savedVerificationCode);
+        }
+
+        @Override
+        public void markVerified(String email, OffsetDateTime verifiedAt) {
+            this.verifiedEmail = email;
+            this.verifiedAt = verifiedAt;
         }
     }
 

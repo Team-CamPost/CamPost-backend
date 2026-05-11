@@ -1,8 +1,12 @@
 package com.campost.backend.domain.auth.repository;
 
+import com.campost.backend.domain.auth.model.EmailVerificationCode;
 import com.campost.backend.domain.auth.model.EmailVerificationCodeCreateCommand;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Repository
 public class JdbcEmailVerificationRepository implements EmailVerificationRepository {
@@ -29,6 +33,39 @@ public class JdbcEmailVerificationRepository implements EmailVerificationReposit
                 .param("email", command.email())
                 .param("codeHash", command.codeHash())
                 .param("expiresAt", command.expiresAt())
+                .update();
+    }
+
+    @Override
+    public Optional<EmailVerificationCode> findByEmail(String email) {
+        String sql = """
+                SELECT email, code_hash, expires_at, verified_at
+                FROM email_verification_codes
+                WHERE email = :email
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("email", email)
+                .query((rs, rowNum) -> new EmailVerificationCode(
+                        rs.getString("email"),
+                        rs.getString("code_hash"),
+                        rs.getObject("expires_at", OffsetDateTime.class),
+                        rs.getObject("verified_at", OffsetDateTime.class)
+                ))
+                .optional();
+    }
+
+    @Override
+    public void markVerified(String email, OffsetDateTime verifiedAt) {
+        String sql = """
+                UPDATE email_verification_codes
+                SET verified_at = :verifiedAt
+                WHERE email = :email
+                """;
+
+        jdbcClient.sql(sql)
+                .param("email", email)
+                .param("verifiedAt", verifiedAt)
                 .update();
     }
 }

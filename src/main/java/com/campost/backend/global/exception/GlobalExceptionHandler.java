@@ -2,6 +2,7 @@ package com.campost.backend.global.exception;
 
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
+import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -75,6 +76,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicatedUsernameException.class)
     public ResponseEntity<ErrorResponse> handleDuplicatedUsername(DuplicatedUsernameException ex) {
         return toResponse(ApiCode.AUTH409_USERNAME);
+    }
+
+    @ExceptionHandler(InvalidEmailVerificationCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidEmailVerificationCode(
+            InvalidEmailVerificationCodeException ex
+    ) {
+        return toResponse(ApiCode.AUTH400_EMAIL_VERIFICATION);
     }
 
     @ExceptionHandler(Exception.class)

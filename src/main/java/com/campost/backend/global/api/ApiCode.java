@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 public enum ApiCode {
     COMMON200(HttpStatus.OK, "COMMON200", "요청이 성공했습니다."),
     AUTH201(HttpStatus.CREATED, "AUTH201", "회원가입 요청 형식 검증에 성공했습니다."),
+    AUTH400_EMAIL_VERIFICATION(HttpStatus.BAD_REQUEST, "AUTH400_EMAIL_VERIFICATION", "이메일 인증번호가 유효하지 않습니다."),
     AUTH409(HttpStatus.CONFLICT, "AUTH409", "이미 가입된 이메일입니다."),
     AUTH409_USERNAME(HttpStatus.CONFLICT, "AUTH409_USERNAME", "이미 사용 중인 아이디입니다."),
     COMMON400(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),

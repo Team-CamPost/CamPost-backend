@@ -2,6 +2,8 @@ package com.campost.backend.domain.auth.controller;
 
 import com.campost.backend.domain.auth.dto.EmailVerificationCodeRequest;
 import com.campost.backend.domain.auth.dto.EmailVerificationCodeResponse;
+import com.campost.backend.domain.auth.dto.EmailVerificationCheckRequest;
+import com.campost.backend.domain.auth.dto.EmailVerificationCheckResponse;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
 import com.campost.backend.domain.auth.dto.UsernameAvailabilityResponse;
@@ -134,5 +136,27 @@ public class AuthController {
             @Valid @RequestBody EmailVerificationCodeRequest request
     ) {
         return ApiResponse.ok(emailVerificationService.sendCode(request));
+    }
+
+    @Operation(
+            summary = "이메일 인증번호 확인",
+            description = "회원가입에 사용할 이메일 인증번호가 유효한지 확인합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "이메일 인증번호 확인 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 검증 실패 또는 유효하지 않은 인증번호",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PostMapping("/email/verification-code/check")
+    public ApiResponse<EmailVerificationCheckResponse> checkEmailVerificationCode(
+            @Valid @RequestBody EmailVerificationCheckRequest request
+    ) {
+        return ApiResponse.ok(emailVerificationService.verifyCode(request));
     }
 }
