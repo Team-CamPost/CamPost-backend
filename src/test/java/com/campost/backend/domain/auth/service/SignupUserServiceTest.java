@@ -3,12 +3,17 @@ package com.campost.backend.domain.auth.service;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
+import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
+import com.campost.backend.domain.auth.model.EmailVerificationCode;
+import com.campost.backend.domain.auth.model.EmailVerificationCodeCreateCommand;
+import com.campost.backend.domain.auth.repository.EmailVerificationRepository;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,9 +21,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SignupUserServiceTest {
 
     private final FakeUserRepository userRepository = new FakeUserRepository();
+    private final FakeEmailVerificationRepository emailVerificationRepository =
+            new FakeEmailVerificationRepository();
     private final PasswordHashService passwordHashService = new PasswordHashService();
     private final SignupUserService signupUserService = new SignupUserService(
             userRepository,
+            emailVerificationRepository,
             passwordHashService
     );
 
@@ -29,6 +37,7 @@ class SignupUserServiceTest {
                 "campost@example.com",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
 
         User savedUser = signupUserService.saveUser(request);
         SignupUserCreateCommand savedCommand = userRepository.savedCommand;
@@ -48,6 +57,7 @@ class SignupUserServiceTest {
                 "campost@example.com",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
         userRepository.emailExists = true;
 
         assertThatThrownBy(() -> signupUserService.saveUser(request))
@@ -64,6 +74,7 @@ class SignupUserServiceTest {
                 "campost@example.com",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
         userRepository.usernameExists = true;
 
         assertThatThrownBy(() -> signupUserService.saveUser(request))
@@ -81,6 +92,7 @@ class SignupUserServiceTest {
                 "campost@example.com",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
         userRepository.emailExists = false;
 
         signupUserService.saveUser(request);
@@ -96,9 +108,11 @@ class SignupUserServiceTest {
                 " User@example.com ",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
 
         signupUserService.saveUser(request);
 
+        assertThat(emailVerificationRepository.checkedEmail).isEqualTo("user@example.com");
         assertThat(userRepository.checkedEmail).isEqualTo("user@example.com");
         assertThat(userRepository.savedCommand.email()).isEqualTo("user@example.com");
     }
@@ -110,11 +124,31 @@ class SignupUserServiceTest {
                 "campost@example.com",
                 "password123"
         );
+        emailVerificationRepository.emailVerified = true;
 
         signupUserService.saveUser(request);
 
         assertThat(userRepository.checkedUsername).isEqualTo("campost123");
         assertThat(userRepository.savedCommand.username()).isEqualTo("campost123");
+    }
+
+    @Test
+    void saveUserThrowsExceptionWhenEmailIsNotVerified() {
+        SignupRequest request = new SignupRequest(
+                "campost123",
+                "campost@example.com",
+                "password123"
+        );
+        emailVerificationRepository.emailVerified = false;
+
+        assertThatThrownBy(() -> signupUserService.saveUser(request))
+                .isInstanceOf(UnverifiedEmailException.class)
+                .hasMessage("이메일 인증이 완료되지 않았습니다.");
+
+        assertThat(userRepository.checkedUsername).isEqualTo("campost123");
+        assertThat(userRepository.checkedEmail).isEqualTo("campost@example.com");
+        assertThat(emailVerificationRepository.checkedEmail).isEqualTo("campost@example.com");
+        assertThat(userRepository.savedCommand).isNull();
     }
 
     @Test
@@ -169,6 +203,33 @@ class SignupUserServiceTest {
         public boolean existsByUsername(String username) {
             this.checkedUsername = username;
             return usernameExists;
+        }
+    }
+
+    private static class FakeEmailVerificationRepository implements EmailVerificationRepository {
+
+        private String checkedEmail;
+        private boolean emailVerified = true;
+
+        @Override
+        public void saveCode(EmailVerificationCodeCreateCommand command) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public Optional<EmailVerificationCode> findByEmail(String email) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public void markVerified(String email, OffsetDateTime verifiedAt) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public boolean existsVerifiedEmail(String email) {
+            this.checkedEmail = email;
+            return emailVerified;
         }
     }
 }

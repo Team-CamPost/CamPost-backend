@@ -1,6 +1,7 @@
 package com.campost.backend.global.exception;
 
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
+import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.global.api.ErrorResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,9 +41,33 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleConflictReturnsEmailDuplicateResponseForEmailConstraint() {
+        DataIntegrityViolationException exception = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint \"ux_users_email\""
+        );
+
+        ResponseEntity<ErrorResponse> response = handler.handleConflict(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("AUTH409");
+    }
+
+    @Test
     void handleInvalidEmailVerificationCodeReturnsAuthBadRequestResponse() {
         ResponseEntity<ErrorResponse> response = handler.handleInvalidEmailVerificationCode(
                 new InvalidEmailVerificationCodeException()
+        );
+
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("AUTH400_EMAIL_VERIFICATION");
+    }
+
+    @Test
+    void handleUnverifiedEmailReturnsAuthBadRequestResponse() {
+        ResponseEntity<ErrorResponse> response = handler.handleUnverifiedEmail(
+                new UnverifiedEmailException()
         );
 
         assertThat(response.getStatusCode().value()).isEqualTo(400);

@@ -3,6 +3,7 @@ package com.campost.backend.global.exception;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
+import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -19,6 +20,9 @@ import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String USERS_USERNAME_UNIQUE_INDEX = "ux_users_username";
+    private static final String USERS_EMAIL_UNIQUE_INDEX = "ux_users_email";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
@@ -61,8 +65,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
-        if (containsMessage(ex, "ux_users_username")) {
+        if (containsMessage(ex, USERS_USERNAME_UNIQUE_INDEX)) {
             return toResponse(ApiCode.AUTH409_USERNAME);
+        }
+
+        if (containsMessage(ex, USERS_EMAIL_UNIQUE_INDEX)) {
+            return toResponse(ApiCode.AUTH409);
         }
 
         return toResponse(ApiCode.COMMON409);
@@ -82,6 +90,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidEmailVerificationCode(
             InvalidEmailVerificationCodeException ex
     ) {
+        return toResponse(ApiCode.AUTH400_EMAIL_VERIFICATION);
+    }
+
+    @ExceptionHandler(UnverifiedEmailException.class)
+    public ResponseEntity<ErrorResponse> handleUnverifiedEmail(UnverifiedEmailException ex) {
         return toResponse(ApiCode.AUTH400_EMAIL_VERIFICATION);
     }
 

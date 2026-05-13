@@ -3,8 +3,10 @@ package com.campost.backend.domain.auth.service;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
+import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
+import com.campost.backend.domain.auth.repository.EmailVerificationRepository;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +17,16 @@ import java.util.Locale;
 public class SignupUserService {
 
     private final UserRepository userRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordHashService passwordHashService;
 
     public SignupUserService(
             UserRepository userRepository,
+            EmailVerificationRepository emailVerificationRepository,
             PasswordHashService passwordHashService
     ) {
         this.userRepository = userRepository;
+        this.emailVerificationRepository = emailVerificationRepository;
         this.passwordHashService = passwordHashService;
     }
 
@@ -36,6 +41,10 @@ public class SignupUserService {
 
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new DuplicatedEmailException();
+        }
+
+        if (!emailVerificationRepository.existsVerifiedEmail(normalizedEmail)) {
+            throw new UnverifiedEmailException();
         }
 
         String passwordHash = passwordHashService.hash(request.password());

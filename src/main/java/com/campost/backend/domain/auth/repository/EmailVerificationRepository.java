@@ -13,4 +13,6 @@ public interface EmailVerificationRepository {
     Optional<EmailVerificationCode> findByEmail(String email);
 
     void markVerified(String email, OffsetDateTime verifiedAt);
+
+    boolean existsVerifiedEmail(String email);
 }
