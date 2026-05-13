@@ -14,8 +14,6 @@ import java.util.Locale;
 @Service
 public class EmailVerificationService {
 
-    private static final long CODE_TTL_MINUTES = 5;
-
     private final EmailVerificationCodeIssueService emailVerificationCodeIssueService;
     private final EmailVerificationCodeVerifyService emailVerificationCodeVerifyService;
     private final VerificationCodeHashService verificationCodeHashService;
@@ -43,7 +41,8 @@ public class EmailVerificationService {
         String normalizedEmail = normalizeEmail(request.email());
         String code = verificationCodeGenerator.generate();
         String codeHash = verificationCodeHashService.hash(code);
-        OffsetDateTime expiresAt = OffsetDateTime.now(clock).plusMinutes(CODE_TTL_MINUTES);
+        OffsetDateTime expiresAt = OffsetDateTime.now(clock)
+                .plusMinutes(EmailVerificationPolicy.CODE_TTL_MINUTES);
 
         emailVerificationCodeIssueService.issueCode(new EmailVerificationCodeCreateCommand(
                 normalizedEmail,
