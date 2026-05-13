@@ -18,13 +18,6 @@ public class EmailVerificationCodeVerifyService {
 
     public EmailVerificationCodeVerifyService(
             EmailVerificationRepository emailVerificationRepository,
-            VerificationCodeHashService verificationCodeHashService
-    ) {
-        this(emailVerificationRepository, verificationCodeHashService, Clock.systemDefaultZone());
-    }
-
-    EmailVerificationCodeVerifyService(
-            EmailVerificationRepository emailVerificationRepository,
             VerificationCodeHashService verificationCodeHashService,
             Clock clock
     ) {

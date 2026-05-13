@@ -28,23 +28,6 @@ public class EmailVerificationService {
             EmailVerificationCodeVerifyService emailVerificationCodeVerifyService,
             VerificationCodeHashService verificationCodeHashService,
             VerificationCodeGenerator verificationCodeGenerator,
-            EmailVerificationSender emailVerificationSender
-    ) {
-        this(
-                emailVerificationCodeIssueService,
-                emailVerificationCodeVerifyService,
-                verificationCodeHashService,
-                verificationCodeGenerator,
-                emailVerificationSender,
-                Clock.systemDefaultZone()
-        );
-    }
-
-    EmailVerificationService(
-            EmailVerificationCodeIssueService emailVerificationCodeIssueService,
-            EmailVerificationCodeVerifyService emailVerificationCodeVerifyService,
-            VerificationCodeHashService verificationCodeHashService,
-            VerificationCodeGenerator verificationCodeGenerator,
             EmailVerificationSender emailVerificationSender,
             Clock clock
     ) {
