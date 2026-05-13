@@ -29,6 +29,14 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: campost-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   # ── Spring Boot API + Importer + AIUpdater ─────────────────
   backend:
     build:
@@ -49,6 +57,14 @@ services:
       OPENAI_API_KEY:             ${OPENAI_API_KEY}
       AI_MODEL:                   ${AI_MODEL}
       AI_MOCK:                    ${AI_MOCK}
+      APP_MAIL_VERIFICATION_SENDER: ${APP_MAIL_VERIFICATION_SENDER:-smtp}
+      APP_MAIL_FROM:                ${APP_MAIL_FROM:-no-reply@campost.local}
+      SPRING_MAIL_HOST:             ${SPRING_MAIL_HOST:-mailpit}
+      SPRING_MAIL_PORT:             ${SPRING_MAIL_PORT:-1025}
+      SPRING_MAIL_USERNAME:         ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD:         ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:             ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:-false}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:  ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:-false}
     ports:
       - "8080:8080"
     healthcheck:
@@ -61,6 +77,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   # ── Python Crawler Pipeline ────────────────────────────────
   pipeline:
