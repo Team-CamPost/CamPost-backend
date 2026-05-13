@@ -1,5 +1,6 @@
 package com.campost.backend.global.exception;
 
+import com.campost.backend.domain.auth.exception.EmailVerificationSendException;
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.global.api.ErrorResponse;
@@ -73,5 +74,16 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(400);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().code()).isEqualTo("AUTH400_EMAIL_VERIFICATION");
+    }
+
+    @Test
+    void handleEmailVerificationSendReturnsServiceUnavailableResponse() {
+        ResponseEntity<ErrorResponse> response = handler.handleEmailVerificationSend(
+                new EmailVerificationSendException(new RuntimeException("SMTP failure"))
+        );
+
+        assertThat(response.getStatusCode().value()).isEqualTo(503);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("AUTH503_EMAIL_VERIFICATION_SEND");
     }
 }

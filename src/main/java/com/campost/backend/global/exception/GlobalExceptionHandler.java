@@ -2,6 +2,7 @@ package com.campost.backend.global.exception;
 
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
+import com.campost.backend.domain.auth.exception.EmailVerificationSendException;
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
 import com.campost.backend.global.api.ApiCode;
@@ -96,6 +97,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnverifiedEmailException.class)
     public ResponseEntity<ErrorResponse> handleUnverifiedEmail(UnverifiedEmailException ex) {
         return toResponse(ApiCode.AUTH400_EMAIL_VERIFICATION);
+    }
+
+    @ExceptionHandler(EmailVerificationSendException.class)
+    public ResponseEntity<ErrorResponse> handleEmailVerificationSend(EmailVerificationSendException ex) {
+        return toResponse(ApiCode.AUTH503_EMAIL_VERIFICATION_SEND);
     }
 
     @ExceptionHandler(Exception.class)
