@@ -28,6 +28,9 @@ springdoc:
 app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  mail:
+    verification-sender: ${APP_MAIL_VERIFICATION_SENDER:logging}
+    from: ${APP_MAIL_FROM:no-reply@campost.local}
   importer:
     enabled: ${IMPORTER_ENABLED:true}
     raw-store-dir: ${RAW_STORE_DIR:/data/raw}

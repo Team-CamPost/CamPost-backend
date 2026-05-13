@@ -2,9 +2,15 @@ package com.campost.backend.domain.auth.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(
+        name = "app.mail.verification-sender",
+        havingValue = "logging",
+        matchIfMissing = true
+)
 public class LoggingEmailVerificationSender implements EmailVerificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingEmailVerificationSender.class);
