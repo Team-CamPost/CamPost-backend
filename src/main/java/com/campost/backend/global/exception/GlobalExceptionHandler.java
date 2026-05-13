@@ -21,6 +21,9 @@ import java.util.Objects;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String USERS_USERNAME_UNIQUE_INDEX = "ux_users_username";
+    private static final String USERS_EMAIL_UNIQUE_INDEX = "ux_users_email";
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         return toResponse(ApiCode.COMMON400);
@@ -62,11 +65,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
-        if (containsMessage(ex, "ux_users_username")) {
+        if (containsMessage(ex, USERS_USERNAME_UNIQUE_INDEX)) {
             return toResponse(ApiCode.AUTH409_USERNAME);
         }
 
-        if (containsMessage(ex, "users_email_key")) {
+        if (containsMessage(ex, USERS_EMAIL_UNIQUE_INDEX)) {
             return toResponse(ApiCode.AUTH409);
         }
 

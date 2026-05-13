@@ -43,7 +43,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleConflictReturnsEmailDuplicateResponseForEmailConstraint() {
         DataIntegrityViolationException exception = new DataIntegrityViolationException(
-                "duplicate key value violates unique constraint \"users_email_key\""
+                "duplicate key value violates unique constraint \"ux_users_email\""
         );
 
         ResponseEntity<ErrorResponse> response = handler.handleConflict(exception);
