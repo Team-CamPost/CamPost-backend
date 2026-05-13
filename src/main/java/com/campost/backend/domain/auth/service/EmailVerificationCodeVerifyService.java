@@ -3,6 +3,7 @@ package com.campost.backend.domain.auth.service;
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.domain.auth.model.EmailVerificationCode;
 import com.campost.backend.domain.auth.repository.EmailVerificationRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ public class EmailVerificationCodeVerifyService {
     private final VerificationCodeHashService verificationCodeHashService;
     private final Clock clock;
 
+    @Autowired
     public EmailVerificationCodeVerifyService(
             EmailVerificationRepository emailVerificationRepository,
             VerificationCodeHashService verificationCodeHashService

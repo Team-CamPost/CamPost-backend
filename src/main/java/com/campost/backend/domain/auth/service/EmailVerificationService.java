@@ -5,6 +5,7 @@ import com.campost.backend.domain.auth.dto.EmailVerificationCodeResponse;
 import com.campost.backend.domain.auth.dto.EmailVerificationCheckRequest;
 import com.campost.backend.domain.auth.dto.EmailVerificationCheckResponse;
 import com.campost.backend.domain.auth.model.EmailVerificationCodeCreateCommand;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -23,6 +24,7 @@ public class EmailVerificationService {
     private final EmailVerificationSender emailVerificationSender;
     private final Clock clock;
 
+    @Autowired
     public EmailVerificationService(
             EmailVerificationCodeIssueService emailVerificationCodeIssueService,
             EmailVerificationCodeVerifyService emailVerificationCodeVerifyService,
