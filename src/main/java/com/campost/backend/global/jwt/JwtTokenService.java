@@ -50,7 +50,7 @@ public class JwtTokenService {
                     .getPayload();
         } catch (ExpiredJwtException ex) {
             throw new TokenExpiredException("Token has expired.");
-        } catch (JwtException ex) {
+        } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidTokenException("Invalid JWT token.");
         }
     }
