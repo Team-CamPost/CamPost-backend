@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 public record User(
         long id,
         String username,
+        String name,
         String email,
         String passwordHash,
         String role,

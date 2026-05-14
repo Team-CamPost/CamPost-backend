@@ -61,8 +61,8 @@ fi
 ensure_compose_env_file
 validate_env_keys POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
 
-echo "[INFO] Starting PostgreSQL container (db)..."
-docker compose up -d db
+echo "[INFO] Starting PostgreSQL (db) and Mailpit..."
+docker compose up -d db mailpit
 
 echo "[INFO] Waiting for db health check..."
 for _ in $(seq 1 60); do

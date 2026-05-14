@@ -13,6 +13,7 @@ class SignupRequestValidationTest {
     @Test
     void validSignupRequestPassesValidation() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -26,17 +27,19 @@ class SignupRequestValidationTest {
         SignupRequest request = new SignupRequest(
                 "",
                 "",
+                "",
                 ""
         );
 
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("username", "email", "password");
+                .contains("name", "username", "email", "password");
     }
 
     @Test
     void invalidEmailFormatFailsValidation() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "invalid-email",
                 "password123"
@@ -49,6 +52,7 @@ class SignupRequestValidationTest {
     @Test
     void passwordWithoutLetterAndNumberFailsValidation() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password"
@@ -61,6 +65,7 @@ class SignupRequestValidationTest {
     @Test
     void shortPasswordFailsValidation() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "abc123"
