@@ -33,7 +33,7 @@ public class LoginService {
             throw new BadCredentialsException();
         }
 
-        String token = jwtTokenService.generate(user.id(), user.username(), user.role());
-        return LoginResponse.of(token);
+        String token = jwtTokenService.generate(user.id(), user.username(), user.name(), user.role());
+        return LoginResponse.of(token, user.name());
     }
 }

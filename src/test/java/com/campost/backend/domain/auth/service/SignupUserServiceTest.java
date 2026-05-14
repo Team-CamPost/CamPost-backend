@@ -33,6 +33,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserHashesPasswordBeforeSaving() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -53,6 +54,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserThrowsExceptionWhenEmailAlreadyExists() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -70,6 +72,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserThrowsExceptionWhenUsernameAlreadyExists() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -88,6 +91,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserStoresUserWhenEmailDoesNotExist() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -104,6 +108,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserNormalizesEmailBeforeDuplicateCheckAndSave() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 " User@example.com ",
                 "password123"
@@ -120,6 +125,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserTrimsUsernameBeforeDuplicateCheckAndSave() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 " campost123 ",
                 "campost@example.com",
                 "password123"
@@ -135,6 +141,7 @@ class SignupUserServiceTest {
     @Test
     void saveUserThrowsExceptionWhenEmailIsNotVerified() {
         SignupRequest request = new SignupRequest(
+                "테스트유저",
                 "campost123",
                 "campost@example.com",
                 "password123"
@@ -186,6 +193,7 @@ class SignupUserServiceTest {
             return new User(
                     1L,
                     command.username(),
+                    command.name(),
                     command.email(),
                     command.passwordHash(),
                     "GUEST",

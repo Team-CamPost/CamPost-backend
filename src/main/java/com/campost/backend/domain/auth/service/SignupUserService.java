@@ -50,6 +50,7 @@ public class SignupUserService {
         String passwordHash = passwordHashService.hash(request.password());
 
         return userRepository.save(new SignupUserCreateCommand(
+                request.name().trim(),
                 normalizedUsername,
                 normalizedEmail,
                 passwordHash

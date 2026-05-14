@@ -9,6 +9,11 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "회원가입 요청")
 public record SignupRequest(
+        @Schema(description = "이름", example = "홍길동")
+        @NotBlank(message = "이름을 입력해주세요.")
+        @Size(max = 50, message = "이름은 50자 이하로 입력해주세요.")
+        String name,
+
         @Schema(description = "아이디", example = "campost123")
         @NotBlank(message = "아이디를 입력해주세요.")
         @Pattern(

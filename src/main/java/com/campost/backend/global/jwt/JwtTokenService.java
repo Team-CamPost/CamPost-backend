@@ -28,11 +28,12 @@ public class JwtTokenService {
         this.expiryMs = expiryMs;
     }
 
-    public String generate(long userId, String username, String role) {
+    public String generate(long userId, String username, String name, String role) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
+                .claim("name", name)
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiryMs))
