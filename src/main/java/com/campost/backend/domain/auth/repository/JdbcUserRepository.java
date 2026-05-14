@@ -5,6 +5,8 @@ import com.campost.backend.domain.auth.model.User;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public class JdbcUserRepository implements UserRepository {
 
@@ -67,5 +69,26 @@ public class JdbcUserRepository implements UserRepository {
                 .param("username", username)
                 .query(Boolean.class)
                 .single());
+    }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+        String sql = """
+                SELECT id, username, email, password_hash, role, created_at
+                FROM users
+                WHERE username = :username
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("username", username)
+                .query((rs, rowNum) -> new User(
+                        rs.getLong("id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("password_hash"),
+                        rs.getString("role"),
+                        rs.getObject("created_at", java.time.OffsetDateTime.class)
+                ))
+                .optional();
     }
 }

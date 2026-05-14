@@ -1,5 +1,6 @@
 package com.campost.backend.global.exception;
 
+import com.campost.backend.domain.auth.exception.BadCredentialsException;
 import com.campost.backend.domain.auth.exception.DuplicatedEmailException;
 import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
 import com.campost.backend.domain.auth.exception.EmailVerificationSendException;
@@ -42,6 +43,11 @@ public class GlobalExceptionHandler {
     })
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex) {
         return toResponse(ApiCode.COMMON400);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        return toResponse(ApiCode.AUTH401_CREDENTIALS);
     }
 
     @ExceptionHandler(TokenExpiredException.class)

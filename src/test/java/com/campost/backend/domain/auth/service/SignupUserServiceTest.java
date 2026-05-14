@@ -204,6 +204,11 @@ class SignupUserServiceTest {
             this.checkedUsername = username;
             return usernameExists;
         }
+
+        @Override
+        public java.util.Optional<User> findByUsername(String username) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
     }
 
     private static class FakeEmailVerificationRepository implements EmailVerificationRepository {

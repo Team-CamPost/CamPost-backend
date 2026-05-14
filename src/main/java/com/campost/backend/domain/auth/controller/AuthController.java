@@ -4,10 +4,13 @@ import com.campost.backend.domain.auth.dto.EmailVerificationCodeRequest;
 import com.campost.backend.domain.auth.dto.EmailVerificationCodeResponse;
 import com.campost.backend.domain.auth.dto.EmailVerificationCheckRequest;
 import com.campost.backend.domain.auth.dto.EmailVerificationCheckResponse;
+import com.campost.backend.domain.auth.dto.LoginRequest;
+import com.campost.backend.domain.auth.dto.LoginResponse;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
 import com.campost.backend.domain.auth.dto.UsernameAvailabilityResponse;
 import com.campost.backend.domain.auth.service.EmailVerificationService;
+import com.campost.backend.domain.auth.service.LoginService;
 import com.campost.backend.domain.auth.service.SignupUserService;
 import com.campost.backend.domain.auth.validation.AuthValidationRules;
 import com.campost.backend.global.api.ApiCode;
@@ -38,13 +41,36 @@ public class AuthController {
 
     private final SignupUserService signupUserService;
     private final EmailVerificationService emailVerificationService;
+    private final LoginService loginService;
 
     public AuthController(
             SignupUserService signupUserService,
-            EmailVerificationService emailVerificationService
+            EmailVerificationService emailVerificationService,
+            LoginService loginService
     ) {
         this.signupUserService = signupUserService;
         this.emailVerificationService = emailVerificationService;
+        this.loginService = loginService;
+    }
+
+    @Operation(
+            summary = "로그인",
+            description = "아이디와 비밀번호로 로그인하고 JWT 액세스 토큰을 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "로그인 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "아이디 또는 비밀번호 불일치",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ApiResponse.ok(ApiCode.AUTH200_LOGIN, loginService.login(request));
     }
 
     @Operation(

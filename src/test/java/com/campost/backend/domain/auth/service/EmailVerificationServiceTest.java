@@ -176,6 +176,11 @@ class EmailVerificationServiceTest {
         public boolean existsByUsername(String username) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
+
+        @Override
+        public java.util.Optional<User> findByUsername(String username) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
     }
 
     private static class FakeEmailVerificationRepository implements EmailVerificationRepository {
