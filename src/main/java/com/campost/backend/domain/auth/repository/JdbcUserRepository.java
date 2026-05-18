@@ -2,6 +2,8 @@ package com.campost.backend.domain.auth.repository;
 
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
+import com.campost.backend.domain.user.model.UserOnboardingProfile;
+import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -91,6 +93,33 @@ public class JdbcUserRepository implements UserRepository {
                         rs.getString("password_hash"),
                         rs.getString("role"),
                         rs.getObject("created_at", java.time.OffsetDateTime.class)
+                ))
+                .optional();
+    }
+
+    @Override
+    public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
+        String sql = """
+                UPDATE users
+                SET department = :department,
+                    grade = :grade,
+                    name = :nickname,
+                    profile_completed = true
+                WHERE id = :userId
+                RETURNING id, department, grade, name, profile_completed
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("department", command.department())
+                .param("grade", command.grade())
+                .param("nickname", command.nickname())
+                .param("userId", command.userId())
+                .query((rs, rowNum) -> new UserOnboardingProfile(
+                        rs.getLong("id"),
+                        rs.getString("department"),
+                        rs.getInt("grade"),
+                        rs.getString("name"),
+                        rs.getBoolean("profile_completed")
                 ))
                 .optional();
     }

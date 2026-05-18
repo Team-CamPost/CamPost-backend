@@ -10,6 +10,8 @@ import com.campost.backend.domain.auth.model.EmailVerificationCode;
 import com.campost.backend.domain.auth.model.EmailVerificationCodeCreateCommand;
 import com.campost.backend.domain.auth.repository.EmailVerificationRepository;
 import com.campost.backend.domain.auth.repository.UserRepository;
+import com.campost.backend.domain.user.model.UserOnboardingProfile;
+import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -215,6 +217,11 @@ class SignupUserServiceTest {
 
         @Override
         public java.util.Optional<User> findByUsername(String username) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
     }
