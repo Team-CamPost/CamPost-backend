@@ -6,6 +6,7 @@ import com.campost.backend.domain.auth.exception.DuplicatedUsernameException;
 import com.campost.backend.domain.auth.exception.EmailVerificationSendException;
 import com.campost.backend.domain.auth.exception.InvalidEmailVerificationCodeException;
 import com.campost.backend.domain.auth.exception.UnverifiedEmailException;
+import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -67,6 +68,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NoSuchElementException ex) {
+        return toResponse(ApiCode.COMMON404);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         return toResponse(ApiCode.COMMON404);
     }
 

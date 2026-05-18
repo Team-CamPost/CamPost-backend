@@ -5,6 +5,8 @@ import com.campost.backend.domain.auth.exception.BadCredentialsException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
+import com.campost.backend.domain.user.model.UserOnboardingProfile;
+import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import com.campost.backend.global.jwt.JwtTokenService;
 import org.junit.jupiter.api.Test;
 
@@ -80,6 +82,11 @@ class LoginServiceTest {
         @Override
         public Optional<User> findByUsername(String username) {
             return foundUser;
+        }
+
+        @Override
+        public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
+            throw new UnsupportedOperationException("Not used in this test.");
         }
     }
 
