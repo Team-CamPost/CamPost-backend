@@ -2,12 +2,11 @@ package com.campost.backend.domain.user.service;
 
 import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
+import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.NoSuchElementException;
 
 @Service
 public class UserOnboardingProfileService {
@@ -28,6 +27,6 @@ public class UserOnboardingProfileService {
         );
 
         return userRepository.updateOnboardingProfile(command)
-                .orElseThrow(() -> new NoSuchElementException("User not found."));
+                .orElseThrow(UserNotFoundException::new);
     }
 }

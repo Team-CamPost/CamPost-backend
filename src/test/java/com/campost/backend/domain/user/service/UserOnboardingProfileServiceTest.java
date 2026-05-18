@@ -4,11 +4,11 @@ import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
+import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import org.junit.jupiter.api.Test;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +43,7 @@ class UserOnboardingProfileServiceTest {
         OnboardingProfileRequest request = new OnboardingProfileRequest("SW", 2, "캠포스트유저");
 
         assertThatThrownBy(() -> service.saveProfile(999L, request))
-                .isInstanceOf(NoSuchElementException.class);
+                .isInstanceOf(UserNotFoundException.class);
     }
 
     private static class FakeUserRepository implements UserRepository {
