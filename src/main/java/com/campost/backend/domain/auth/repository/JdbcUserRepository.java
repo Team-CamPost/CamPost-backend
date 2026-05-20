@@ -4,6 +4,7 @@ import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
+import com.campost.backend.domain.user.model.UserProfile;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -95,6 +96,40 @@ public class JdbcUserRepository implements UserRepository {
                         rs.getObject("created_at", java.time.OffsetDateTime.class)
                 ))
                 .optional();
+    }
+
+    @Override
+    public Optional<UserProfile> findProfileById(long userId) {
+        String sql = """
+                SELECT id, username, email, name, department, grade, role,
+                       profile_completed, created_at, last_login_at
+                FROM users
+                WHERE id = :userId
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("userId", userId)
+                .query((rs, rowNum) -> new UserProfile(
+                        rs.getLong("id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("name"),
+                        rs.getString("department"),
+                        toInteger(rs.getObject("grade")),
+                        rs.getString("role"),
+                        rs.getBoolean("profile_completed"),
+                        rs.getObject("created_at", java.time.OffsetDateTime.class),
+                        rs.getObject("last_login_at", java.time.OffsetDateTime.class)
+                ))
+                .optional();
+    }
+
+    private Integer toInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        return ((Number) value).intValue();
     }
 
     @Override
