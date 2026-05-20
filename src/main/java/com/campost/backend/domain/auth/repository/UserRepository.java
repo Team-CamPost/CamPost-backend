@@ -5,6 +5,7 @@ import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import com.campost.backend.domain.user.model.UserProfile;
+import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 
 import java.util.Optional;
 
@@ -19,6 +20,8 @@ public interface UserRepository {
     Optional<User> findByUsername(String username);
 
     Optional<UserProfile> findProfileById(long userId);
+
+    Optional<UserProfile> updateProfile(UserProfileUpdateCommand command);
 
     Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command);
 }

@@ -3,8 +3,10 @@ package com.campost.backend.domain.user.controller;
 import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
 import com.campost.backend.domain.user.dto.OnboardingProfileResponse;
 import com.campost.backend.domain.user.dto.UserProfileResponse;
+import com.campost.backend.domain.user.dto.UserProfileUpdateRequest;
 import com.campost.backend.domain.user.service.UserOnboardingProfileService;
 import com.campost.backend.domain.user.service.UserProfileQueryService;
+import com.campost.backend.domain.user.service.UserProfileUpdateService;
 import com.campost.backend.global.api.ApiResponse;
 import com.campost.backend.global.api.ErrorResponse;
 import com.campost.backend.global.exception.InvalidTokenException;
@@ -33,16 +35,57 @@ public class UserProfileController {
 
     private final UserOnboardingProfileService userOnboardingProfileService;
     private final UserProfileQueryService userProfileQueryService;
+    private final UserProfileUpdateService userProfileUpdateService;
     private final JwtTokenService jwtTokenService;
 
     public UserProfileController(
             UserOnboardingProfileService userOnboardingProfileService,
             UserProfileQueryService userProfileQueryService,
+            UserProfileUpdateService userProfileUpdateService,
             JwtTokenService jwtTokenService
     ) {
         this.userOnboardingProfileService = userOnboardingProfileService;
         this.userProfileQueryService = userProfileQueryService;
+        this.userProfileUpdateService = userProfileUpdateService;
         this.jwtTokenService = jwtTokenService;
+    }
+
+    @Operation(
+            summary = "내 프로필 정보 수정",
+            description = "로그인한 사용자의 닉네임, 학과, 학년 정보를 수정합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 정보 수정 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 토큰 누락, 만료 또는 유효하지 않은 토큰",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PatchMapping("/me/profile")
+    public ApiResponse<UserProfileResponse> updateMyProfile(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @Valid @RequestBody UserProfileUpdateRequest request
+    ) {
+        long userId = resolveUserId(authorization);
+
+        return ApiResponse.ok(UserProfileResponse.from(
+                userProfileUpdateService.updateProfile(userId, request)
+        ));
     }
 
     @Operation(

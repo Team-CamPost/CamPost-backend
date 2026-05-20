@@ -3,7 +3,7 @@ package com.campost.backend.domain.user.service;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
-import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
+import com.campost.backend.domain.user.dto.UserProfileUpdateRequest;
 import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
@@ -11,47 +11,46 @@ import com.campost.backend.domain.user.model.UserProfile;
 import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 import org.junit.jupiter.api.Test;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class UserOnboardingProfileServiceTest {
+class UserProfileUpdateServiceTest {
 
     private final FakeUserRepository userRepository = new FakeUserRepository();
-    private final UserOnboardingProfileService service = new UserOnboardingProfileService(userRepository);
+    private final UserProfileUpdateService service = new UserProfileUpdateService(userRepository);
 
     @Test
-    void saveProfileTrimsNicknameAndMarksProfileCompleted() {
-        OnboardingProfileRequest request = new OnboardingProfileRequest(
-                "SW",
-                3,
-                " 캠포스트유저 "
-        );
+    void updateProfileTrimsNicknameAndReturnsUpdatedProfile() {
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest("SW", 3, " 캠포스트유저 ");
 
-        UserOnboardingProfile profile = service.saveProfile(1L, request);
+        UserProfile profile = service.updateProfile(1L, request);
 
         assertThat(userRepository.savedCommand.userId()).isEqualTo(1L);
         assertThat(userRepository.savedCommand.department()).isEqualTo("SW");
         assertThat(userRepository.savedCommand.grade()).isEqualTo(3);
         assertThat(userRepository.savedCommand.nickname()).isEqualTo("캠포스트유저");
         assertThat(profile.nickname()).isEqualTo("캠포스트유저");
+        assertThat(profile.department()).isEqualTo("SW");
+        assertThat(profile.grade()).isEqualTo(3);
         assertThat(profile.profileCompleted()).isTrue();
     }
 
     @Test
-    void saveProfileThrowsExceptionWhenUserDoesNotExist() {
+    void updateProfileThrowsExceptionWhenUserDoesNotExist() {
         userRepository.updatedProfile = Optional.empty();
-        OnboardingProfileRequest request = new OnboardingProfileRequest("SW", 2, "캠포스트유저");
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest("SW", 2, "캠포스트유저");
 
-        assertThatThrownBy(() -> service.saveProfile(999L, request))
+        assertThatThrownBy(() -> service.updateProfile(999L, request))
                 .isInstanceOf(UserNotFoundException.class);
     }
 
     private static class FakeUserRepository implements UserRepository {
 
-        private UserOnboardingProfileUpdateCommand savedCommand;
-        private Optional<UserOnboardingProfile> updatedProfile;
+        private UserProfileUpdateCommand savedCommand;
+        private Optional<UserProfile> updatedProfile;
 
         @Override
         public User save(SignupUserCreateCommand command) {
@@ -80,23 +79,28 @@ class UserOnboardingProfileServiceTest {
 
         @Override
         public Optional<UserProfile> updateProfile(UserProfileUpdateCommand command) {
-            throw new UnsupportedOperationException("Not used in this test.");
-        }
-
-        @Override
-        public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
             this.savedCommand = command;
             if (updatedProfile != null) {
                 return updatedProfile;
             }
 
-            return Optional.of(new UserOnboardingProfile(
+            return Optional.of(new UserProfile(
                     command.userId(),
+                    "campost123",
+                    "campost@example.com",
+                    command.nickname(),
                     command.department(),
                     command.grade(),
-                    command.nickname(),
-                    true
+                    "GUEST",
+                    true,
+                    OffsetDateTime.parse("2026-05-20T01:00:00Z"),
+                    OffsetDateTime.parse("2026-05-20T02:00:00Z")
             ));
+        }
+
+        @Override
+        public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
+            throw new UnsupportedOperationException("Not used in this test.");
         }
     }
 }
