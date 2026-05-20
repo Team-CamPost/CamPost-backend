@@ -6,6 +6,7 @@ import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.auth.service.PasswordHashService;
 import com.campost.backend.domain.user.dto.UserPasswordChangeRequest;
+import com.campost.backend.domain.user.exception.SamePasswordException;
 import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
@@ -49,6 +50,18 @@ class UserPasswordChangeServiceTest {
                 1L,
                 new UserPasswordChangeRequest("wrongPassword123", "newPassword123")
         )).isInstanceOf(BadCredentialsException.class);
+
+        assertThat(userRepository.updatedPasswordHash).isNull();
+    }
+
+    @Test
+    void changePasswordRejectsSamePasswordWithoutUpdating() {
+        userRepository.user = Optional.of(userWithPasswordHash(passwordHashService.hash("password123")));
+
+        assertThatThrownBy(() -> service.changePassword(
+                1L,
+                new UserPasswordChangeRequest("password123", "password123")
+        )).isInstanceOf(SamePasswordException.class);
 
         assertThat(userRepository.updatedPasswordHash).isNull();
     }

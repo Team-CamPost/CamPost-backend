@@ -57,15 +57,7 @@ public class JdbcUserRepository implements UserRepository {
                 .param("username", command.username())
                 .param("email", command.email())
                 .param("passwordHash", command.passwordHash())
-                .query((rs, rowNum) -> new User(
-                        rs.getLong("id"),
-                        rs.getString("username"),
-                        rs.getString("name"),
-                        rs.getString("email"),
-                        rs.getString("password_hash"),
-                        rs.getString("role"),
-                        rs.getObject("created_at", java.time.OffsetDateTime.class)
-                ))
+                .query(USER_ROW_MAPPER)
                 .single();
     }
 

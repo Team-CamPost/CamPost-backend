@@ -5,6 +5,7 @@ import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.auth.service.PasswordHashService;
 import com.campost.backend.domain.user.dto.UserPasswordChangeRequest;
+import com.campost.backend.domain.user.exception.SamePasswordException;
 import com.campost.backend.domain.user.exception.UserNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,10 @@ public class UserPasswordChangeService {
 
         if (!passwordHashService.matches(request.currentPassword(), user.passwordHash())) {
             throw new BadCredentialsException();
+        }
+
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw new SamePasswordException();
         }
 
         String newPasswordHash = passwordHashService.hash(request.newPassword());
