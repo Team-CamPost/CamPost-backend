@@ -15,6 +15,7 @@ import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import com.campost.backend.domain.user.model.UserProfile;
+import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -187,6 +188,11 @@ class EmailVerificationServiceTest {
 
         @Override
         public Optional<UserProfile> findProfileById(long userId) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public Optional<UserProfile> updateProfile(UserProfileUpdateCommand command) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
 

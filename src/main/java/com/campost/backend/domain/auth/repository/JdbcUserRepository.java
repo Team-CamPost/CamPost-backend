@@ -5,6 +5,7 @@ import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import com.campost.backend.domain.user.model.UserProfile;
+import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -109,6 +110,38 @@ public class JdbcUserRepository implements UserRepository {
 
         return jdbcClient.sql(sql)
                 .param("userId", userId)
+                .query((rs, rowNum) -> new UserProfile(
+                        rs.getLong("id"),
+                        rs.getString("username"),
+                        rs.getString("email"),
+                        rs.getString("name"),
+                        rs.getString("department"),
+                        rs.getObject("grade", Integer.class),
+                        rs.getString("role"),
+                        rs.getBoolean("profile_completed"),
+                        rs.getObject("created_at", java.time.OffsetDateTime.class),
+                        rs.getObject("last_login_at", java.time.OffsetDateTime.class)
+                ))
+                .optional();
+    }
+
+    @Override
+    public Optional<UserProfile> updateProfile(UserProfileUpdateCommand command) {
+        String sql = """
+                UPDATE users
+                SET department = :department,
+                    grade = :grade,
+                    name = :nickname
+                WHERE id = :userId
+                RETURNING id, username, email, name, department, grade, role,
+                          profile_completed, created_at, last_login_at
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("department", command.department())
+                .param("grade", command.grade())
+                .param("nickname", command.nickname())
+                .param("userId", command.userId())
                 .query((rs, rowNum) -> new UserProfile(
                         rs.getLong("id"),
                         rs.getString("username"),
