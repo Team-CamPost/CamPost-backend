@@ -183,7 +183,7 @@ public class RawImporterRepository {
                 .update();
 
         for (RawAttachmentPayload attachment : attachments) {
-            if (attachment.fileKey() == null || attachment.fileKey().isBlank()) {
+            if (attachment == null || attachment.fileKey() == null || attachment.fileKey().isBlank()) {
                 continue;
             }
             upsertAttachment(noticeId, attachment);
@@ -220,23 +220,29 @@ public class RawImporterRepository {
                     download_cached = EXCLUDED.download_cached
                 """;
 
-        String ext = normalizeExt(attachment.ext());
+        String fileKey = requireMaxLength(requiredValue(attachment.fileKey(), "file_key"), "file_key", 500);
+        String originalName = requireMaxLength(originalName(attachment), "original_name", 500);
+        String ext = requireMaxLength(normalizeExt(attachment.ext()), "ext", 20);
+        String mimeType = requireMaxLength(trimToNull(attachment.mimeType()), "mime_type", 100);
+        String checksum = requireMaxLength(trimToNull(attachment.checksum()), "checksum", 64);
+        String localPath = requireMaxLength(trimToNull(attachment.localPath()), "local_path", 500);
+        String parser = requireMaxLength(trimToNull(attachment.parser()), "parser", 50);
 
         jdbcClient.sql(sql)
                 .param("noticeId", noticeId)
-                .param("fileKey", trimToMax(attachment.fileKey(), 500))
-                .param("originalName", trimToMax(originalName(attachment), 500))
-                .param("ext", trimToMax(ext, 20))
+                .param("fileKey", fileKey)
+                .param("originalName", originalName)
+                .param("ext", ext)
                 .param("fileType", inferFileType(ext))
-                .param("mimeType", trimToMax(attachment.mimeType(), 100))
+                .param("mimeType", mimeType)
                 .param("fileSize", attachment.fileSize())
-                .param("checksum", trimToMax(attachment.checksum(), 64))
+                .param("checksum", checksum)
                 .param("sourceUrl", attachment.url())
-                .param("localPath", trimToMax(attachment.localPath(), 500))
+                .param("localPath", localPath)
                 .param("downloadOk", boolOrFalse(attachment.downloadOk()))
                 .param("extractedText", attachment.extractedText())
                 .param("extractedChars", attachment.extractedChars() == null ? 0 : attachment.extractedChars())
-                .param("parser", trimToMax(attachment.parser(), 50))
+                .param("parser", parser)
                 .param("parseQuality", normalizeParseQuality(attachment.parseQuality()))
                 .param("parseOk", boolOrFalse(attachment.parseOk()))
                 .param("downloadCached", boolOrFalse(attachment.downloadCached()))
@@ -308,12 +314,32 @@ public class RawImporterRepository {
         return attachment.fileKey().trim();
     }
 
-    private String trimToMax(String value, int maxLength) {
+    private String requiredValue(String value, String fieldName) {
+        String trimmed = trimToNull(value);
+        if (trimmed == null) {
+            throw new IllegalArgumentException("Attachment " + fieldName + " is required.");
+        }
+        return trimmed;
+    }
+
+    private String requireMaxLength(String value, String fieldName, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        if (value.length() > maxLength) {
+            throw new IllegalArgumentException(
+                    "Attachment " + fieldName + " exceeds " + maxLength + " characters."
+            );
+        }
+        return value;
+    }
+
+    private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
         String trimmed = value.trim();
-        return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
 }
