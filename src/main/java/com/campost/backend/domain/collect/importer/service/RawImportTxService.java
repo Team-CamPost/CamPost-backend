@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 
 @Service
@@ -25,10 +26,22 @@ public class RawImportTxService {
             OffsetDateTime crawledAt,
             LocalDate noticeDate,
             Integer views,
-            LocalDate deadline
+            LocalDate deadline,
+            LocalTime deadlineTime,
+            OffsetDateTime deadlineAt
     ) {
-        long rawNoticeId = rawImporterRepository.upsertRawNotice(payload, crawledAt);
-        rawImporterRepository.upsertNotice(rawNoticeId, payload, noticeDate, views, deadline, crawledAt);
+        long rawNoticeId = rawImporterRepository.upsertRawNotice(payload, crawledAt, deadlineTime, deadlineAt);
+        long noticeId = rawImporterRepository.upsertNotice(
+                rawNoticeId,
+                payload,
+                noticeDate,
+                views,
+                deadline,
+                deadlineTime,
+                deadlineAt,
+                crawledAt
+        );
+        rawImporterRepository.syncAttachments(noticeId, payload.attachmentsOrEmpty());
         rawImporterRepository.logImport(fileName, "SUCCESS", "Imported to raw_notices/notices");
     }
 }
