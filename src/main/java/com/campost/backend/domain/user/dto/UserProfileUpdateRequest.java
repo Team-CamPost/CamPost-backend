@@ -29,7 +29,7 @@ public record UserProfileUpdateRequest(
         @NotBlank(message = "닉네임을 입력해주세요.")
         @Size(
                 max = UserProfileValidationRules.MAX_NICKNAME_LENGTH,
-                message = "닉네임은 50자 이하로 입력해주세요."
+                message = "닉네임은 {max}자 이하로 입력해주세요."
         )
         String nickname
 ) {

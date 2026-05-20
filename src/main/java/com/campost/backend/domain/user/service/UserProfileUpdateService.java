@@ -8,6 +8,8 @@ import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 public class UserProfileUpdateService {
 
@@ -21,12 +23,16 @@ public class UserProfileUpdateService {
     public UserProfile updateProfile(long userId, UserProfileUpdateRequest request) {
         UserProfileUpdateCommand command = new UserProfileUpdateCommand(
                 userId,
-                request.department().trim(),
+                trimRequired(request.department(), "department"),
                 request.grade(),
-                request.nickname().trim()
+                trimRequired(request.nickname(), "nickname")
         );
 
         return userRepository.updateProfile(command)
                 .orElseThrow(UserNotFoundException::new);
+    }
+
+    private String trimRequired(String value, String fieldName) {
+        return Objects.requireNonNull(value, fieldName + " must not be null.").trim();
     }
 }
