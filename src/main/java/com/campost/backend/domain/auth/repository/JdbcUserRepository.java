@@ -115,21 +115,13 @@ public class JdbcUserRepository implements UserRepository {
                         rs.getString("email"),
                         rs.getString("name"),
                         rs.getString("department"),
-                        toInteger(rs.getObject("grade")),
+                        rs.getObject("grade", Integer.class),
                         rs.getString("role"),
                         rs.getBoolean("profile_completed"),
                         rs.getObject("created_at", java.time.OffsetDateTime.class),
                         rs.getObject("last_login_at", java.time.OffsetDateTime.class)
                 ))
                 .optional();
-    }
-
-    private Integer toInteger(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        return ((Number) value).intValue();
     }
 
     @Override
