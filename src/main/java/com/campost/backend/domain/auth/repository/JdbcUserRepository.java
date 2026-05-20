@@ -28,6 +28,16 @@ public class JdbcUserRepository implements UserRepository {
             rs.getObject("last_login_at", java.time.OffsetDateTime.class)
     );
 
+    private static final RowMapper<User> USER_ROW_MAPPER = (rs, rowNum) -> new User(
+            rs.getLong("id"),
+            rs.getString("username"),
+            rs.getString("name"),
+            rs.getString("email"),
+            rs.getString("password_hash"),
+            rs.getString("role"),
+            rs.getObject("created_at", java.time.OffsetDateTime.class)
+    );
+
     private final JdbcClient jdbcClient;
 
     public JdbcUserRepository(JdbcClient jdbcClient) {
@@ -101,15 +111,21 @@ public class JdbcUserRepository implements UserRepository {
 
         return jdbcClient.sql(sql)
                 .param("username", username)
-                .query((rs, rowNum) -> new User(
-                        rs.getLong("id"),
-                        rs.getString("username"),
-                        rs.getString("name"),
-                        rs.getString("email"),
-                        rs.getString("password_hash"),
-                        rs.getString("role"),
-                        rs.getObject("created_at", java.time.OffsetDateTime.class)
-                ))
+                .query(USER_ROW_MAPPER)
+                .optional();
+    }
+
+    @Override
+    public Optional<User> findById(long userId) {
+        String sql = """
+                SELECT id, username, name, email, password_hash, role, created_at
+                FROM users
+                WHERE id = :userId
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("userId", userId)
+                .query(USER_ROW_MAPPER)
                 .optional();
     }
 
@@ -147,6 +163,20 @@ public class JdbcUserRepository implements UserRepository {
                 .param("userId", command.userId())
                 .query(USER_PROFILE_ROW_MAPPER)
                 .optional();
+    }
+
+    @Override
+    public boolean updatePasswordHash(long userId, String passwordHash) {
+        String sql = """
+                UPDATE users
+                SET password_hash = :passwordHash
+                WHERE id = :userId
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("passwordHash", passwordHash)
+                .param("userId", userId)
+                .update() == 1;
     }
 
     @Override

@@ -2,9 +2,11 @@ package com.campost.backend.domain.user.controller;
 
 import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
 import com.campost.backend.domain.user.dto.OnboardingProfileResponse;
+import com.campost.backend.domain.user.dto.UserPasswordChangeRequest;
 import com.campost.backend.domain.user.dto.UserProfileResponse;
 import com.campost.backend.domain.user.dto.UserProfileUpdateRequest;
 import com.campost.backend.domain.user.service.UserOnboardingProfileService;
+import com.campost.backend.domain.user.service.UserPasswordChangeService;
 import com.campost.backend.domain.user.service.UserProfileQueryService;
 import com.campost.backend.domain.user.service.UserProfileUpdateService;
 import com.campost.backend.global.api.ApiResponse;
@@ -34,20 +36,60 @@ public class UserProfileController {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final UserOnboardingProfileService userOnboardingProfileService;
+    private final UserPasswordChangeService userPasswordChangeService;
     private final UserProfileQueryService userProfileQueryService;
     private final UserProfileUpdateService userProfileUpdateService;
     private final JwtTokenService jwtTokenService;
 
     public UserProfileController(
             UserOnboardingProfileService userOnboardingProfileService,
+            UserPasswordChangeService userPasswordChangeService,
             UserProfileQueryService userProfileQueryService,
             UserProfileUpdateService userProfileUpdateService,
             JwtTokenService jwtTokenService
     ) {
         this.userOnboardingProfileService = userOnboardingProfileService;
+        this.userPasswordChangeService = userPasswordChangeService;
         this.userProfileQueryService = userProfileQueryService;
         this.userProfileUpdateService = userProfileUpdateService;
         this.jwtTokenService = jwtTokenService;
+    }
+
+    @Operation(
+            summary = "비밀번호 변경",
+            description = "로그인한 사용자의 현재 비밀번호를 확인한 뒤 새 비밀번호로 변경합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "비밀번호 변경 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 또는 현재 비밀번호 불일치",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PatchMapping("/me/password")
+    public ApiResponse<Void> changePassword(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @Valid @RequestBody UserPasswordChangeRequest request
+    ) {
+        long userId = resolveUserId(authorization);
+        userPasswordChangeService.changePassword(userId, request);
+
+        return ApiResponse.ok(null);
     }
 
     @Operation(
