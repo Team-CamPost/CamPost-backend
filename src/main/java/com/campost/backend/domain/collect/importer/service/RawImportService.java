@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -168,6 +169,8 @@ public class RawImportService {
         LocalDate noticeDate = parseNoticeDate(payload.date());
         Integer views = parseViews(payload.views());
         LocalDate deadline = parseLocalDate(payload.deadline());
+        LocalTime deadlineTime = parseLocalTime(payload.deadlineTime());
+        OffsetDateTime deadlineAt = parseOffsetDateTimeOrNull(payload.deadlineAt());
 
         rawImportTxService.importOne(
                 file.getFileName().toString(),
@@ -175,7 +178,9 @@ public class RawImportService {
                 crawledAt,
                 noticeDate,
                 views,
-                deadline
+                deadline,
+                deadlineTime,
+                deadlineAt
         );
     }
 
@@ -202,6 +207,17 @@ public class RawImportService {
             return OffsetDateTime.parse(value);
         } catch (DateTimeParseException ex) {
             return OffsetDateTime.now(ZoneOffset.UTC);
+        }
+    }
+
+    private OffsetDateTime parseOffsetDateTimeOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            return null;
         }
     }
 
@@ -232,6 +248,17 @@ public class RawImportService {
         }
         try {
             return LocalDate.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    private LocalTime parseLocalTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value.trim());
         } catch (DateTimeParseException ex) {
             return null;
         }

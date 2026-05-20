@@ -40,3 +40,4 @@ ON notices(deadline_at) WHERE deadline_at IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_attachments_parse_quality
 ON notice_attachments(parse_quality);
+
