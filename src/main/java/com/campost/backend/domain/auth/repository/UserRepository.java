@@ -19,9 +19,13 @@ public interface UserRepository {
 
     Optional<User> findByUsername(String username);
 
+    Optional<User> findById(long userId);
+
     Optional<UserProfile> findProfileById(long userId);
 
     Optional<UserProfile> updateProfile(UserProfileUpdateCommand command);
+
+    boolean updatePasswordHash(long userId, String passwordHash);
 
     Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command);
 }

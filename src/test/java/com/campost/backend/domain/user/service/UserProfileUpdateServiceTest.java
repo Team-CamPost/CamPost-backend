@@ -73,6 +73,11 @@ class UserProfileUpdateServiceTest {
         }
 
         @Override
+        public Optional<User> findById(long userId) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
         public Optional<UserProfile> findProfileById(long userId) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
@@ -96,6 +101,11 @@ class UserProfileUpdateServiceTest {
                     OffsetDateTime.parse("2026-05-20T01:00:00Z"),
                     OffsetDateTime.parse("2026-05-20T02:00:00Z")
             ));
+        }
+
+        @Override
+        public boolean updatePasswordHash(long userId, String passwordHash) {
+            throw new UnsupportedOperationException("Not used in this test.");
         }
 
         @Override

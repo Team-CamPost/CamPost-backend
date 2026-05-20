@@ -74,12 +74,22 @@ class UserOnboardingProfileServiceTest {
         }
 
         @Override
+        public Optional<User> findById(long userId) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
         public Optional<UserProfile> findProfileById(long userId) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
 
         @Override
         public Optional<UserProfile> updateProfile(UserProfileUpdateCommand command) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
+        public boolean updatePasswordHash(long userId, String passwordHash) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
 
