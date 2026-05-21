@@ -17,6 +17,9 @@ public class StaticFileConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         String location = Path.of(filesDir).toAbsolutePath().normalize().toUri().toString();
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
 
         registry.addResourceHandler("/files/**")
                 .addResourceLocations(location);
