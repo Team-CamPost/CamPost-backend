@@ -53,6 +53,7 @@ services:
       JWT_SECRET:                 ${JWT_SECRET}
       JWT_EXPIRY_MS:              ${JWT_EXPIRY_MS}
       RAW_STORE_DIR:              ${RAW_STORE_DIR}
+      FILES_DIR:                  ${FILES_DIR:-/data/files}
       AI_RESULT_DIR:              ${AI_RESULT_DIR}
       OPENAI_API_KEY:             ${OPENAI_API_KEY}
       AI_MODEL:                   ${AI_MODEL}
