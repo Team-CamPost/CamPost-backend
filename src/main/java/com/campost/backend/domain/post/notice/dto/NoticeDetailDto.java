@@ -100,6 +100,12 @@ public record NoticeDetailDto(
             "parseQuality",
             "parseOk",
             "downloadCached",
+            "previewPdfPath",
+            "previewPdfSize",
+            "previewPdfChecksum",
+            "conversionStatus",
+            "conversionEngine",
+            "conversionError",
             "createdAt"
     })
     public record AttachmentDto(
@@ -137,6 +143,18 @@ public record NoticeDetailDto(
             Boolean parseOk,
             @JsonProperty("downloadCached")
             Boolean downloadCached,
+            @JsonProperty("previewPdfPath")
+            String previewPdfPath,
+            @JsonProperty("previewPdfSize")
+            Long previewPdfSize,
+            @JsonProperty("previewPdfChecksum")
+            String previewPdfChecksum,
+            @JsonProperty("conversionStatus")
+            String conversionStatus,
+            @JsonProperty("conversionEngine")
+            String conversionEngine,
+            @JsonProperty("conversionError")
+            String conversionError,
             @JsonProperty("createdAt")
             OffsetDateTime createdAt
     ) {
