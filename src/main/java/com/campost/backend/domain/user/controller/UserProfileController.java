@@ -62,28 +62,28 @@ public class UserProfileController {
     }
 
     @Operation(
-            summary = "Account deletion",
-            description = "Deletes the authenticated user's account after verifying the current password.",
+            summary = "회원탈퇴",
+            description = "로그인한 사용자의 현재 비밀번호를 확인한 뒤 계정을 삭제합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Account deletion succeeded"
+                    description = "회원탈퇴 성공"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "Request validation failed",
+                    description = "입력값 검증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "Authentication failed or current password mismatch",
+                    description = "인증 실패 또는 현재 비밀번호 불일치",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "User not found",
+                    description = "사용자를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             )
     })
