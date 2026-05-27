@@ -2,9 +2,11 @@ package com.campost.backend.domain.user.controller;
 
 import com.campost.backend.domain.user.dto.OnboardingProfileRequest;
 import com.campost.backend.domain.user.dto.OnboardingProfileResponse;
+import com.campost.backend.domain.user.dto.UserAccountDeleteRequest;
 import com.campost.backend.domain.user.dto.UserPasswordChangeRequest;
 import com.campost.backend.domain.user.dto.UserProfileResponse;
 import com.campost.backend.domain.user.dto.UserProfileUpdateRequest;
+import com.campost.backend.domain.user.service.UserAccountDeleteService;
 import com.campost.backend.domain.user.service.UserOnboardingProfileService;
 import com.campost.backend.domain.user.service.UserPasswordChangeService;
 import com.campost.backend.domain.user.service.UserProfileQueryService;
@@ -21,6 +23,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,6 +38,7 @@ public class UserProfileController {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private final UserAccountDeleteService userAccountDeleteService;
     private final UserOnboardingProfileService userOnboardingProfileService;
     private final UserPasswordChangeService userPasswordChangeService;
     private final UserProfileQueryService userProfileQueryService;
@@ -42,17 +46,56 @@ public class UserProfileController {
     private final JwtTokenService jwtTokenService;
 
     public UserProfileController(
+            UserAccountDeleteService userAccountDeleteService,
             UserOnboardingProfileService userOnboardingProfileService,
             UserPasswordChangeService userPasswordChangeService,
             UserProfileQueryService userProfileQueryService,
             UserProfileUpdateService userProfileUpdateService,
             JwtTokenService jwtTokenService
     ) {
+        this.userAccountDeleteService = userAccountDeleteService;
         this.userOnboardingProfileService = userOnboardingProfileService;
         this.userPasswordChangeService = userPasswordChangeService;
         this.userProfileQueryService = userProfileQueryService;
         this.userProfileUpdateService = userProfileUpdateService;
         this.jwtTokenService = jwtTokenService;
+    }
+
+    @Operation(
+            summary = "Account deletion",
+            description = "Deletes the authenticated user's account after verifying the current password.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Account deletion succeeded"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Request validation failed",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication failed or current password mismatch",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @DeleteMapping("/me")
+    public ApiResponse<Void> deleteMyAccount(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @Valid @RequestBody UserAccountDeleteRequest request
+    ) {
+        long userId = resolveUserId(authorization);
+        userAccountDeleteService.deleteAccount(userId, request);
+
+        return ApiResponse.ok(null);
     }
 
     @Operation(

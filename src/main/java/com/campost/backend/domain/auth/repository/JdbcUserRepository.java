@@ -172,6 +172,18 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public boolean deleteById(long userId) {
+        String sql = """
+                DELETE FROM users
+                WHERE id = :userId
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("userId", userId)
+                .update() == 1;
+    }
+
+    @Override
     public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
         String sql = """
                 UPDATE users
