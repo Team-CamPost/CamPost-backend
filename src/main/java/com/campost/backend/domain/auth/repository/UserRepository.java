@@ -27,5 +27,7 @@ public interface UserRepository {
 
     boolean updatePasswordHash(long userId, String passwordHash);
 
+    boolean deleteById(long userId);
+
     Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command);
 }

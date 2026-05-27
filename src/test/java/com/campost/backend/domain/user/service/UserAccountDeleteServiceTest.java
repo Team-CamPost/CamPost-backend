@@ -5,8 +5,7 @@ import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
 import com.campost.backend.domain.auth.repository.UserRepository;
 import com.campost.backend.domain.auth.service.PasswordHashService;
-import com.campost.backend.domain.user.dto.UserPasswordChangeRequest;
-import com.campost.backend.domain.user.exception.SamePasswordException;
+import com.campost.backend.domain.user.dto.UserAccountDeleteRequest;
 import com.campost.backend.domain.user.exception.UserNotFoundException;
 import com.campost.backend.domain.user.model.UserOnboardingProfile;
 import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
@@ -20,70 +19,55 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class UserPasswordChangeServiceTest {
+class UserAccountDeleteServiceTest {
 
     private final FakeUserRepository userRepository = new FakeUserRepository();
     private final PasswordHashService passwordHashService = new PasswordHashService();
-    private final UserPasswordChangeService service = new UserPasswordChangeService(
+    private final UserAccountDeleteService service = new UserAccountDeleteService(
             userRepository,
             passwordHashService
     );
 
     @Test
-    void changePasswordVerifiesCurrentPasswordAndStoresHashedNewPassword() {
+    void deleteAccountVerifiesCurrentPasswordAndDeletesUser() {
         userRepository.user = Optional.of(userWithPasswordHash(passwordHashService.hash("password123")));
 
-        service.changePassword(1L, new UserPasswordChangeRequest("password123", "newPassword123"));
+        service.deleteAccount(1L, new UserAccountDeleteRequest("password123"));
 
         assertThat(userRepository.checkedUserId).isEqualTo(1L);
-        assertThat(userRepository.updatedUserId).isEqualTo(1L);
-        assertThat(userRepository.updatedPasswordHash).isNotEqualTo("newPassword123");
-        assertThat(userRepository.updatedPasswordHash).doesNotContain("newPassword123");
-        assertThat(passwordHashService.matches("newPassword123", userRepository.updatedPasswordHash)).isTrue();
+        assertThat(userRepository.deletedUserId).isEqualTo(1L);
     }
 
     @Test
-    void changePasswordThrowsExceptionWhenCurrentPasswordDoesNotMatch() {
+    void deleteAccountThrowsExceptionWhenCurrentPasswordDoesNotMatch() {
         userRepository.user = Optional.of(userWithPasswordHash(passwordHashService.hash("password123")));
 
-        assertThatThrownBy(() -> service.changePassword(
+        assertThatThrownBy(() -> service.deleteAccount(
                 1L,
-                new UserPasswordChangeRequest("wrongPassword123", "newPassword123")
+                new UserAccountDeleteRequest("wrongPassword123")
         )).isInstanceOf(BadCredentialsException.class);
 
-        assertThat(userRepository.updatedPasswordHash).isNull();
+        assertThat(userRepository.deletedUserId).isZero();
     }
 
     @Test
-    void changePasswordRejectsSamePasswordWithoutUpdating() {
-        userRepository.user = Optional.of(userWithPasswordHash(passwordHashService.hash("password123")));
-
-        assertThatThrownBy(() -> service.changePassword(
-                1L,
-                new UserPasswordChangeRequest("password123", "password123")
-        )).isInstanceOf(SamePasswordException.class);
-
-        assertThat(userRepository.updatedPasswordHash).isNull();
-    }
-
-    @Test
-    void changePasswordThrowsExceptionWhenUserDoesNotExist() {
+    void deleteAccountThrowsExceptionWhenUserDoesNotExist() {
         userRepository.user = Optional.empty();
 
-        assertThatThrownBy(() -> service.changePassword(
+        assertThatThrownBy(() -> service.deleteAccount(
                 999L,
-                new UserPasswordChangeRequest("password123", "newPassword123")
+                new UserAccountDeleteRequest("password123")
         )).isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
-    void changePasswordThrowsExceptionWhenUpdateFails() {
+    void deleteAccountThrowsExceptionWhenDeleteFails() {
         userRepository.user = Optional.of(userWithPasswordHash(passwordHashService.hash("password123")));
-        userRepository.updateResult = false;
+        userRepository.deleteResult = false;
 
-        assertThatThrownBy(() -> service.changePassword(
+        assertThatThrownBy(() -> service.deleteAccount(
                 1L,
-                new UserPasswordChangeRequest("password123", "newPassword123")
+                new UserAccountDeleteRequest("password123")
         )).isInstanceOf(UserNotFoundException.class);
     }
 
@@ -103,9 +87,8 @@ class UserPasswordChangeServiceTest {
 
         private Optional<User> user = Optional.empty();
         private long checkedUserId;
-        private long updatedUserId;
-        private String updatedPasswordHash;
-        private boolean updateResult = true;
+        private long deletedUserId;
+        private boolean deleteResult = true;
 
         @Override
         public User save(SignupUserCreateCommand command) {
@@ -145,14 +128,13 @@ class UserPasswordChangeServiceTest {
 
         @Override
         public boolean updatePasswordHash(long userId, String passwordHash) {
-            this.updatedUserId = userId;
-            this.updatedPasswordHash = passwordHash;
-            return updateResult;
+            throw new UnsupportedOperationException("Not used in this test.");
         }
 
         @Override
         public boolean deleteById(long userId) {
-            throw new UnsupportedOperationException("Not used in this test.");
+            this.deletedUserId = userId;
+            return deleteResult;
         }
 
         @Override

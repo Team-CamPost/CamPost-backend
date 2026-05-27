@@ -243,6 +243,11 @@ class SignupUserServiceTest {
         }
 
         @Override
+        public boolean deleteById(long userId) {
+            throw new UnsupportedOperationException("Not used in this test.");
+        }
+
+        @Override
         public Optional<UserOnboardingProfile> updateOnboardingProfile(UserOnboardingProfileUpdateCommand command) {
             throw new UnsupportedOperationException("Not used in this test.");
         }
