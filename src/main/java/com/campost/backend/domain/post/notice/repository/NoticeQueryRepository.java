@@ -123,7 +123,9 @@ public class NoticeQueryRepository {
         String sql = """
                 SELECT id, file_key, original_name, ext, file_type, mime_type, file_size,
                        checksum, source_url, local_path, download_ok, extracted_text,
-                       extracted_chars, parser, parse_quality, parse_ok, download_cached, created_at
+                       extracted_chars, parser, parse_quality, parse_ok, download_cached,
+                       preview_pdf_path, preview_pdf_size, preview_pdf_checksum,
+                       conversion_status, conversion_engine, conversion_error, created_at
                 FROM notice_attachments
                 WHERE notice_id = :noticeId
                 ORDER BY id ASC
@@ -149,6 +151,12 @@ public class NoticeQueryRepository {
                         rs.getString("parse_quality"),
                         rs.getObject("parse_ok", Boolean.class),
                         rs.getObject("download_cached", Boolean.class),
+                        rs.getString("preview_pdf_path"),
+                        rs.getObject("preview_pdf_size", Long.class),
+                        rs.getString("preview_pdf_checksum"),
+                        rs.getString("conversion_status"),
+                        rs.getString("conversion_engine"),
+                        rs.getString("conversion_error"),
                         rs.getObject("created_at", java.time.OffsetDateTime.class)
                 ))
                 .list();

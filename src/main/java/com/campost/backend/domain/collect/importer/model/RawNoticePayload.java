@@ -50,7 +50,13 @@ public record RawNoticePayload(
             @JsonProperty("parser") String parser,
             @JsonProperty("parse_quality") String parseQuality,
             @JsonProperty("parse_ok") Boolean parseOk,
-            @JsonProperty("download_cached") Boolean downloadCached
+            @JsonProperty("download_cached") Boolean downloadCached,
+            @JsonProperty("preview_pdf_path") String previewPdfPath,
+            @JsonProperty("preview_pdf_size") Long previewPdfSize,
+            @JsonProperty("preview_pdf_checksum") String previewPdfChecksum,
+            @JsonProperty("conversion_status") String conversionStatus,
+            @JsonProperty("conversion_engine") String conversionEngine,
+            @JsonProperty("conversion_error") String conversionError
     ) {
     }
 }

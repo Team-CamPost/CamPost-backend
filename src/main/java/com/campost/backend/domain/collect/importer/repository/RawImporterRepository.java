@@ -27,6 +27,15 @@ public class RawImporterRepository {
     private static final Set<String> ARCHIVE_EXTENSIONS = Set.of(
             "zip", "7z", "rar", "tar", "gz"
     );
+    private static final Set<String> CONVERSION_STATUSES = Set.of(
+            "success",
+            "failed",
+            "timeout",
+            "unavailable",
+            "disabled",
+            "download_failed",
+            "not_applicable"
+    );
 
     private final JdbcClient jdbcClient;
 
@@ -195,11 +204,15 @@ public class RawImporterRepository {
                 INSERT INTO notice_attachments (
                     notice_id, file_key, original_name, ext, file_type, mime_type,
                     file_size, checksum, source_url, local_path, download_ok,
-                    extracted_text, extracted_chars, parser, parse_quality, parse_ok, download_cached
+                    extracted_text, extracted_chars, parser, parse_quality, parse_ok, download_cached,
+                    preview_pdf_path, preview_pdf_size, preview_pdf_checksum,
+                    conversion_status, conversion_engine, conversion_error
                 ) VALUES (
                     :noticeId, :fileKey, :originalName, :ext, :fileType, :mimeType,
                     :fileSize, :checksum, :sourceUrl, :localPath, :downloadOk,
-                    :extractedText, :extractedChars, :parser, :parseQuality, :parseOk, :downloadCached
+                    :extractedText, :extractedChars, :parser, :parseQuality, :parseOk, :downloadCached,
+                    :previewPdfPath, :previewPdfSize, :previewPdfChecksum,
+                    :conversionStatus, :conversionEngine, :conversionError
                 )
                 ON CONFLICT (file_key) DO UPDATE SET
                     notice_id = EXCLUDED.notice_id,
@@ -217,7 +230,13 @@ public class RawImporterRepository {
                     parser = EXCLUDED.parser,
                     parse_quality = EXCLUDED.parse_quality,
                     parse_ok = EXCLUDED.parse_ok,
-                    download_cached = EXCLUDED.download_cached
+                    download_cached = EXCLUDED.download_cached,
+                    preview_pdf_path = EXCLUDED.preview_pdf_path,
+                    preview_pdf_size = EXCLUDED.preview_pdf_size,
+                    preview_pdf_checksum = EXCLUDED.preview_pdf_checksum,
+                    conversion_status = EXCLUDED.conversion_status,
+                    conversion_engine = EXCLUDED.conversion_engine,
+                    conversion_error = EXCLUDED.conversion_error
                 """;
 
         String fileKey = requireMaxLength(requiredValue(attachment.fileKey(), "file_key"), "file_key", 500);
@@ -227,6 +246,21 @@ public class RawImporterRepository {
         String checksum = requireMaxLength(trimToNull(attachment.checksum()), "checksum", 64);
         String localPath = requireMaxLength(trimToNull(attachment.localPath()), "local_path", 500);
         String parser = requireMaxLength(trimToNull(attachment.parser()), "parser", 50);
+        String previewPdfPath = requireMaxLength(
+                trimToNull(attachment.previewPdfPath()),
+                "preview_pdf_path",
+                500
+        );
+        String previewPdfChecksum = requireMaxLength(
+                trimToNull(attachment.previewPdfChecksum()),
+                "preview_pdf_checksum",
+                64
+        );
+        String conversionEngine = requireMaxLength(
+                trimToNull(attachment.conversionEngine()),
+                "conversion_engine",
+                50
+        );
 
         jdbcClient.sql(sql)
                 .param("noticeId", noticeId)
@@ -246,6 +280,12 @@ public class RawImporterRepository {
                 .param("parseQuality", normalizeParseQuality(attachment.parseQuality()))
                 .param("parseOk", boolOrFalse(attachment.parseOk()))
                 .param("downloadCached", boolOrFalse(attachment.downloadCached()))
+                .param("previewPdfPath", previewPdfPath)
+                .param("previewPdfSize", attachment.previewPdfSize())
+                .param("previewPdfChecksum", previewPdfChecksum)
+                .param("conversionStatus", normalizeConversionStatus(attachment.conversionStatus()))
+                .param("conversionEngine", conversionEngine)
+                .param("conversionError", attachment.conversionError())
                 .update();
     }
 
@@ -305,6 +345,17 @@ public class RawImporterRepository {
             return normalized;
         }
         return "none";
+    }
+
+    private String normalizeConversionStatus(String conversionStatus) {
+        if (conversionStatus == null || conversionStatus.isBlank()) {
+            return "not_applicable";
+        }
+        String normalized = conversionStatus.trim().toLowerCase(Locale.ROOT);
+        if (CONVERSION_STATUSES.contains(normalized)) {
+            return normalized;
+        }
+        return "not_applicable";
     }
 
     private String originalName(RawAttachmentPayload attachment) {
