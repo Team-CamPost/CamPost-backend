@@ -40,7 +40,23 @@ public class LoginService {
         }
 
         User user = foundUser.get();
-        String token = jwtTokenService.generate(user.id(), user.username(), user.name(), user.role());
-        return LoginResponse.of(token, user.name());
+        String accessToken = jwtTokenService.generateAccessToken(
+                user.id(),
+                user.username(),
+                user.name(),
+                user.role()
+        );
+        String refreshToken = jwtTokenService.generateRefreshToken(user.id());
+
+        return LoginResponse.of(
+                user.id(),
+                user.username(),
+                user.name(),
+                user.role(),
+                accessToken,
+                refreshToken,
+                jwtTokenService.accessTokenExpiryMs() / 1000,
+                jwtTokenService.refreshTokenExpiryMs() / 1000
+        );
     }
 }

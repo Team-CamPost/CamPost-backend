@@ -1,6 +1,7 @@
 package com.campost.backend.domain.auth.service;
 
 import com.campost.backend.domain.auth.dto.LoginRequest;
+import com.campost.backend.domain.auth.dto.LoginResponse;
 import com.campost.backend.domain.auth.exception.BadCredentialsException;
 import com.campost.backend.domain.auth.model.SignupUserCreateCommand;
 import com.campost.backend.domain.auth.model.User;
@@ -10,6 +11,7 @@ import com.campost.backend.domain.user.model.UserOnboardingProfileUpdateCommand;
 import com.campost.backend.domain.user.model.UserProfile;
 import com.campost.backend.domain.user.model.UserProfileUpdateCommand;
 import com.campost.backend.global.jwt.JwtTokenService;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -21,14 +23,55 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class LoginServiceTest {
 
     private static final String JWT_SECRET = "01234567890123456789012345678901";
+    private static final long ACCESS_TOKEN_EXPIRY_MS = 3_600_000L;
+    private static final long REFRESH_TOKEN_EXPIRY_MS = 1_209_600_000L;
 
     private final FakeUserRepository userRepository = new FakeUserRepository();
     private final CountingPasswordHashService passwordHashService = new CountingPasswordHashService();
+    private final JwtTokenService jwtTokenService = new JwtTokenService(
+            JWT_SECRET,
+            ACCESS_TOKEN_EXPIRY_MS,
+            REFRESH_TOKEN_EXPIRY_MS
+    );
     private final LoginService loginService = new LoginService(
             userRepository,
             passwordHashService,
-            new JwtTokenService(JWT_SECRET, 3_600_000L)
+            jwtTokenService
     );
+
+    @Test
+    void loginReturnsAccessTokenAndRefreshTokenWithUserClaims() {
+        userRepository.foundUser = Optional.of(new User(
+                1L,
+                "campost123",
+                "CamPost User",
+                "campost@example.com",
+                "real-hash",
+                "USER",
+                OffsetDateTime.now()
+        ));
+
+        LoginResponse response = loginService.login(new LoginRequest("campost123", "password123"));
+
+        Claims accessClaims = jwtTokenService.parse(response.accessToken());
+        Claims refreshClaims = jwtTokenService.parse(response.refreshToken());
+
+        assertThat(response.userId()).isEqualTo(1L);
+        assertThat(response.username()).isEqualTo("campost123");
+        assertThat(response.name()).isEqualTo("CamPost User");
+        assertThat(response.role()).isEqualTo("USER");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
+        assertThat(response.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRY_MS / 1000);
+        assertThat(response.refreshTokenExpiresIn()).isEqualTo(REFRESH_TOKEN_EXPIRY_MS / 1000);
+        assertThat(accessClaims.getSubject()).isEqualTo("1");
+        assertThat(accessClaims.get("role", String.class)).isEqualTo("USER");
+        assertThat(accessClaims.get("tokenType", String.class)).isEqualTo(JwtTokenService.ACCESS_TOKEN_TYPE);
+        assertThat(refreshClaims.getSubject()).isEqualTo("1");
+        assertThat(refreshClaims.get("username")).isNull();
+        assertThat(refreshClaims.get("name")).isNull();
+        assertThat(refreshClaims.get("role")).isNull();
+        assertThat(refreshClaims.get("tokenType", String.class)).isEqualTo(JwtTokenService.REFRESH_TOKEN_TYPE);
+    }
 
     @Test
     void loginUsesDummyPasswordHashWhenUserDoesNotExist() {
