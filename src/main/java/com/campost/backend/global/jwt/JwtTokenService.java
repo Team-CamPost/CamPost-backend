@@ -17,24 +17,54 @@ import java.util.Date;
 @Component
 public class JwtTokenService {
 
+    public static final String ACCESS_TOKEN_TYPE = "access";
+    public static final String REFRESH_TOKEN_TYPE = "refresh";
+
     private final SecretKey secretKey;
-    private final long expiryMs;
+    private final long accessTokenExpiryMs;
+    private final long refreshTokenExpiryMs;
 
     public JwtTokenService(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiry-ms}") long expiryMs
+            @Value("${app.jwt.access-expiry-ms}") long accessTokenExpiryMs,
+            @Value("${app.jwt.refresh-expiry-ms}") long refreshTokenExpiryMs
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiryMs = expiryMs;
+        this.accessTokenExpiryMs = accessTokenExpiryMs;
+        this.refreshTokenExpiryMs = refreshTokenExpiryMs;
     }
 
-    public String generate(long userId, String username, String name, String role) {
+    public String generateAccessToken(long userId, String username, String name, String role) {
+        return generate(userId, username, name, role, ACCESS_TOKEN_TYPE, accessTokenExpiryMs);
+    }
+
+    public String generateRefreshToken(long userId, String username, String name, String role) {
+        return generate(userId, username, name, role, REFRESH_TOKEN_TYPE, refreshTokenExpiryMs);
+    }
+
+    public long accessTokenExpiryMs() {
+        return accessTokenExpiryMs;
+    }
+
+    public long refreshTokenExpiryMs() {
+        return refreshTokenExpiryMs;
+    }
+
+    private String generate(
+            long userId,
+            String username,
+            String name,
+            String role,
+            String tokenType,
+            long expiryMs
+    ) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("name", name)
                 .claim("role", role)
+                .claim("tokenType", tokenType)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiryMs))
                 .signWith(secretKey)
