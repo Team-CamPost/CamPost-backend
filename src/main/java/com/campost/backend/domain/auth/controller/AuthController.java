@@ -8,10 +8,13 @@ import com.campost.backend.domain.auth.dto.LoginRequest;
 import com.campost.backend.domain.auth.dto.LoginResponse;
 import com.campost.backend.domain.auth.dto.SignupRequest;
 import com.campost.backend.domain.auth.dto.SignupResponse;
+import com.campost.backend.domain.auth.dto.TokenRefreshRequest;
+import com.campost.backend.domain.auth.dto.TokenRefreshResponse;
 import com.campost.backend.domain.auth.dto.UsernameAvailabilityResponse;
 import com.campost.backend.domain.auth.service.EmailVerificationService;
 import com.campost.backend.domain.auth.service.LoginService;
 import com.campost.backend.domain.auth.service.SignupUserService;
+import com.campost.backend.domain.auth.service.TokenRefreshService;
 import com.campost.backend.domain.auth.validation.AuthValidationRules;
 import com.campost.backend.global.api.ApiCode;
 import com.campost.backend.global.api.ApiResponse;
@@ -42,15 +45,18 @@ public class AuthController {
     private final SignupUserService signupUserService;
     private final EmailVerificationService emailVerificationService;
     private final LoginService loginService;
+    private final TokenRefreshService tokenRefreshService;
 
     public AuthController(
             SignupUserService signupUserService,
             EmailVerificationService emailVerificationService,
-            LoginService loginService
+            LoginService loginService,
+            TokenRefreshService tokenRefreshService
     ) {
         this.signupUserService = signupUserService;
         this.emailVerificationService = emailVerificationService;
         this.loginService = loginService;
+        this.tokenRefreshService = tokenRefreshService;
     }
 
     @Operation(
@@ -71,6 +77,38 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(ApiCode.AUTH200_LOGIN, loginService.login(request));
+    }
+
+    @Operation(
+            summary = "Access Token 재발급",
+            description = "Refresh Token을 검증하고 최신 사용자 정보로 새 Access Token을 발급합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Access Token 재발급 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "입력값 검증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "만료되었거나 유효하지 않은 Refresh Token",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @PostMapping("/token/refresh")
+    public ApiResponse<TokenRefreshResponse> refreshToken(
+            @Valid @RequestBody TokenRefreshRequest request
+    ) {
+        return ApiResponse.ok(tokenRefreshService.refresh(request));
     }
 
     @Operation(
