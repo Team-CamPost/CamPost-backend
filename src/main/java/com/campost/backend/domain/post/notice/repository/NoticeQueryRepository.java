@@ -28,7 +28,29 @@ public class NoticeQueryRepository {
 
         StringBuilder sql = new StringBuilder("""
                 SELECT n.id, n.article_id, n.title, cs.department, n.author, n.category, n.date, n.views,
-                       n.source_url, n.deadline, n.target, n.apply_method, n.published_at, n.created_at
+                       n.source_url,
+                       (
+                         SELECT image_asset ->> 'src'
+                         FROM jsonb_array_elements(COALESCE(n.content_assets -> 'images', '[]'::jsonb))
+                              WITH ORDINALITY AS images(image_asset, ordinal)
+                         WHERE COALESCE((image_asset ->> 'file_size')::bigint, 0) >= 10000
+                           AND COALESCE(image_asset ->> 'original_src', '') NOT ILIKE '%fonts.gstatic.com%'
+                           AND NOT (
+                             COALESCE(image_asset ->> 'original_src', '') LIKE 'data:image%'
+                             AND COALESCE((image_asset ->> 'file_size')::bigint, 0) < 100000
+                           )
+                         ORDER BY
+                             CASE
+                               WHEN COALESCE(image_asset ->> 'name', '') ILIKE '%포스터%'
+                                 OR COALESCE(image_asset ->> 'name', '') ILIKE '%poster%'
+                               THEN 0
+                               ELSE 1
+                             END,
+                           CASE WHEN image_asset ->> 'role' = 'body' THEN 0 ELSE 1 END,
+                           ordinal
+                         LIMIT 1
+                       ) AS thumbnail_path,
+                       n.deadline, n.target, n.apply_method, n.published_at, n.created_at
                 FROM notices n
                 LEFT JOIN raw_notices rn ON n.raw_notice_id = rn.id
                 LEFT JOIN crawl_sources cs ON rn.source_id = cs.id
@@ -67,6 +89,7 @@ public class NoticeQueryRepository {
                         rs.getObject("date", java.time.LocalDate.class),
                         rs.getObject("views", Integer.class),
                         rs.getString("source_url"),
+                        rs.getString("thumbnail_path"),
                         rs.getObject("deadline", java.time.LocalDate.class),
                         rs.getString("target"),
                         rs.getString("apply_method"),
