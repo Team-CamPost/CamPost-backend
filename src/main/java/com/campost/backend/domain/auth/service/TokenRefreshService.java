@@ -47,6 +47,10 @@ public class TokenRefreshService {
     }
 
     private long parseUserId(String subject) {
+        if (subject == null || subject.isBlank()) {
+            throw new InvalidTokenException("Invalid token subject.");
+        }
+
         try {
             return Long.parseLong(subject);
         } catch (NumberFormatException ex) {

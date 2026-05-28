@@ -3,6 +3,7 @@ package com.campost.backend.global.api;
 import org.springframework.http.HttpStatus;
 
 public enum ApiCode {
+    AUTH200_TOKEN_REFRESH(HttpStatus.OK, "AUTH200_TOKEN_REFRESH", "Access Token 재발급에 성공했습니다."),
     COMMON200(HttpStatus.OK, "COMMON200", "요청이 성공했습니다."),
     AUTH200_LOGIN(HttpStatus.OK, "AUTH200", "로그인에 성공했습니다."),
     AUTH201(HttpStatus.CREATED, "AUTH201", "회원가입 요청 형식 검증에 성공했습니다."),
