@@ -108,7 +108,7 @@ public class AuthController {
     public ApiResponse<TokenRefreshResponse> refreshToken(
             @Valid @RequestBody TokenRefreshRequest request
     ) {
-        return ApiResponse.ok(tokenRefreshService.refresh(request));
+        return ApiResponse.ok(ApiCode.AUTH200_TOKEN_REFRESH, tokenRefreshService.refresh(request));
     }
 
     @Operation(
