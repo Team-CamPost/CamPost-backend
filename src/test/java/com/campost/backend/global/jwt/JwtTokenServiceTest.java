@@ -34,13 +34,15 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void generateRefreshTokenIncludesUserClaimsAndRefreshTokenType() {
-        String token = jwtTokenService.generateRefreshToken(1L, "campost123", "CamPost User", "USER");
+    void generateRefreshTokenIncludesOnlyUserIdAndRefreshTokenType() {
+        String token = jwtTokenService.generateRefreshToken(1L);
 
         Claims claims = jwtTokenService.parse(token);
 
         assertThat(claims.getSubject()).isEqualTo("1");
-        assertThat(claims.get("role", String.class)).isEqualTo("USER");
+        assertThat(claims.get("username")).isNull();
+        assertThat(claims.get("name")).isNull();
+        assertThat(claims.get("role")).isNull();
         assertThat(claims.get("tokenType", String.class)).isEqualTo(JwtTokenService.REFRESH_TOKEN_TYPE);
         assertThat(tokenLifetimeMs(claims)).isCloseTo(REFRESH_TOKEN_EXPIRY_MS, withinOneSecond());
     }

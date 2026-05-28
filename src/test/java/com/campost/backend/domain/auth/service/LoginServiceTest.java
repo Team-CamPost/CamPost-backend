@@ -67,7 +67,9 @@ class LoginServiceTest {
         assertThat(accessClaims.get("role", String.class)).isEqualTo("USER");
         assertThat(accessClaims.get("tokenType", String.class)).isEqualTo(JwtTokenService.ACCESS_TOKEN_TYPE);
         assertThat(refreshClaims.getSubject()).isEqualTo("1");
-        assertThat(refreshClaims.get("role", String.class)).isEqualTo("USER");
+        assertThat(refreshClaims.get("username")).isNull();
+        assertThat(refreshClaims.get("name")).isNull();
+        assertThat(refreshClaims.get("role")).isNull();
         assertThat(refreshClaims.get("tokenType", String.class)).isEqualTo(JwtTokenService.REFRESH_TOKEN_TYPE);
     }
 

@@ -5,6 +5,7 @@ import com.campost.backend.global.exception.TokenExpiredException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +39,8 @@ public class JwtTokenService {
         return generate(userId, username, name, role, ACCESS_TOKEN_TYPE, accessTokenExpiryMs);
     }
 
-    public String generateRefreshToken(long userId, String username, String name, String role) {
-        return generate(userId, username, name, role, REFRESH_TOKEN_TYPE, refreshTokenExpiryMs);
+    public String generateRefreshToken(long userId) {
+        return generate(userId, null, null, null, REFRESH_TOKEN_TYPE, refreshTokenExpiryMs);
     }
 
     public long accessTokenExpiryMs() {
@@ -59,16 +60,26 @@ public class JwtTokenService {
             long expiryMs
     ) {
         Date now = new Date();
-        return Jwts.builder()
+        JwtBuilder builder = Jwts.builder()
                 .subject(String.valueOf(userId))
-                .claim("username", username)
-                .claim("name", name)
-                .claim("role", role)
                 .claim("tokenType", tokenType)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiryMs))
-                .signWith(secretKey)
-                .compact();
+                .signWith(secretKey);
+
+        if (username != null) {
+            builder.claim("username", username);
+        }
+
+        if (name != null) {
+            builder.claim("name", name);
+        }
+
+        if (role != null) {
+            builder.claim("role", role);
+        }
+
+        return builder.compact();
     }
 
     public Claims parse(String token) {

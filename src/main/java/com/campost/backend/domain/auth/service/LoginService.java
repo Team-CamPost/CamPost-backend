@@ -46,12 +46,7 @@ public class LoginService {
                 user.name(),
                 user.role()
         );
-        String refreshToken = jwtTokenService.generateRefreshToken(
-                user.id(),
-                user.username(),
-                user.name(),
-                user.role()
-        );
+        String refreshToken = jwtTokenService.generateRefreshToken(user.id());
 
         return LoginResponse.of(
                 user.id(),
