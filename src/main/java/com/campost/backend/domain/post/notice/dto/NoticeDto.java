@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
         "date",
         "views",
         "sourceUrl",
+        "thumbnailPath",
         "deadline",
         "target",
         "applyMethod",
@@ -43,6 +44,8 @@ public record NoticeDto(
         Integer views,
         @JsonProperty("sourceUrl")
         String sourceUrl,
+        @JsonProperty("thumbnailPath")
+        String thumbnailPath,
         @JsonProperty("deadline")
         LocalDate deadline,
         @JsonProperty("target")
