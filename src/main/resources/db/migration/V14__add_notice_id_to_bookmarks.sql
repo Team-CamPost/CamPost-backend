@@ -40,3 +40,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_bookmarks_user_notice
 
 CREATE INDEX IF NOT EXISTS idx_bookmarks_notice_id
     ON bookmarks(notice_id);
+
+ALTER TABLE bookmarks
+    DROP COLUMN IF EXISTS article_id;

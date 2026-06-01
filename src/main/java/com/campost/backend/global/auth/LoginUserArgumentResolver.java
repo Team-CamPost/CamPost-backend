@@ -39,7 +39,7 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
     ) {
         String authorization = webRequest.getHeader(AUTHORIZATION_HEADER);
 
-        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+        if (authorization == null || !authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
             throw new InvalidTokenException("Missing bearer token.");
         }
 

@@ -18,10 +18,11 @@ public class NoticeBookmarkService {
 
     @Transactional
     public NoticeBookmarkStatus bookmark(long userId, long noticeId) {
-        String articleId = noticeBookmarkStore.findArticleIdByNoticeId(noticeId)
-                .orElseThrow(() -> new NoSuchElementException("Notice not found: " + noticeId));
+        if (!noticeBookmarkStore.existsNoticeById(noticeId)) {
+            throw new NoSuchElementException("Notice not found: " + noticeId);
+        }
 
-        noticeBookmarkStore.save(userId, noticeId, articleId);
+        noticeBookmarkStore.save(userId, noticeId);
 
         return new NoticeBookmarkStatus(noticeId, true);
     }
