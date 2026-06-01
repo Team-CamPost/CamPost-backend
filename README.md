@@ -112,6 +112,19 @@ git commit -m "refactor: 아이콘 리팩토링 (#13)"
 
 ## 6. 백엔드 개발 실행 가이드 (스크립트 기준)
 
+### 6-0. 로컬 개발 DB 설정 (최초 1회)
+
+기본 개발 DB는 **Neon PostgreSQL**을 사용합니다. Docker PostgreSQL은 마이그레이션/초기화 테스트 등 예외적인 경우에만 사용합니다.
+
+1. `.env.example`을 복사해 `.env` 생성: `cp .env.example .env`
+2. `.env`의 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`를 Neon 연결 정보로 채웁니다.
+   - Neon Dashboard > Connection Details > **Pooled connection string** 사용
+   - Direct connection string은 사용하지 않습니다.
+3. `JWT_SECRET`을 32자 이상의 랜덤 문자열로 채웁니다.
+4. `.env`는 절대 Git에 커밋하지 않습니다.
+
+> Neon 접속 정보는 팀 내부 채널로 공유됩니다.
+
 ### 6-1. 코드를 수정할 때마다 backend 컨테이너를 중지해야 하나요?
 
 아닙니다. 평소 개발에서는 backend를 컨테이너로 띄우지 않고 로컬에서 실행하는 방식이 가장 효율적입니다.
@@ -119,7 +132,7 @@ git commit -m "refactor: 아이콘 리팩토링 (#13)"
 - 평소 개발 권장 방식:
   - docker compose up -d --build 를 매번 사용하지 않음
   - scripts/local-dev.sh 실행
-  - 이 스크립트는 DB만 도커로 띄우고 backend는 로컬 터미널에서 실행
+  - Neon DB 사용 시 Docker DB 기동을 자동으로 스킵하고 바로 Spring Boot 실행
 - 코드 수정 후 반영 방법:
   - local-dev.sh 실행 터미널에서 Ctrl + C
   - 다시 scripts/local-dev.sh 실행
@@ -188,7 +201,7 @@ CamPost-backend/
 │        │  └─ V4__seed_initial_data.sql
 │        └─ application.yml
 ├─ .env.example
-├─ .env.local.example
+├─ .env.local.example       # deprecated
 ├─ docker-compose.yml
 ├─ Dockerfile
 ├─ pom.xml
@@ -199,8 +212,10 @@ CamPost-backend/
 ## 8. 빠른 실행 명령어
 
 ```bash
-# 로컬 개발 (권장)
+# 최초 1회: .env 생성 및 설정 안내
 bash scripts/setup-local.sh
+
+# 로컬 개발 (Neon DB 사용 시 Docker 없이 바로 실행)
 bash scripts/local-dev.sh
 
 # 로컬 검증
@@ -213,7 +228,7 @@ bash scripts/compose-smoke.sh
 ## 9. 백엔드 API/문서 확인
 
 - Health: http://localhost:8080/api/v1/health
-- Swagger UI: http://localhost:8080/swagger-ui.html
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 
 ## 10. 협업 원칙 요약
