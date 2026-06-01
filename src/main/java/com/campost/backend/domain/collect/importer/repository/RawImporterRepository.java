@@ -290,8 +290,8 @@ public class RawImporterRepository {
                 .param("conversionStatus", normalizeConversionStatus(attachment.conversionStatus()))
                 .param("conversionEngine", conversionEngine)
                 .param("conversionError", attachment.conversionError())
-                .param("r2Url", requireMaxLength(trimToNull(attachment.r2Url()), "r2_url", 500))
-                .param("previewPdfR2Url", requireMaxLength(trimToNull(attachment.previewPdfR2Url()), "preview_pdf_r2_url", 500))
+                .param("r2Url", requireMaxLength(trimToNull(attachment.r2Url()), "r2_url", 2048))
+                .param("previewPdfR2Url", requireMaxLength(trimToNull(attachment.previewPdfR2Url()), "preview_pdf_r2_url", 2048))
                 .update();
     }
 
