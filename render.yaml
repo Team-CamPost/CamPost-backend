@@ -4,7 +4,6 @@ services:
     runtime: docker
     plan: free
     branch: dev
-    rootDir: CamPost-backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health
     autoDeploy: true
