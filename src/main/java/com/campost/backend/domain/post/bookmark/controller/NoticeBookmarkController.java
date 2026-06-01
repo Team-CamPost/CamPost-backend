@@ -4,9 +4,7 @@ import com.campost.backend.domain.post.bookmark.dto.NoticeBookmarkResponse;
 import com.campost.backend.domain.post.bookmark.service.NoticeBookmarkService;
 import com.campost.backend.global.api.ApiResponse;
 import com.campost.backend.global.api.ErrorResponse;
-import com.campost.backend.global.exception.InvalidTokenException;
-import com.campost.backend.global.jwt.JwtTokenService;
-import io.jsonwebtoken.Claims;
+import com.campost.backend.global.auth.LoginUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,17 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/notices/{noticeId}/bookmark")
 public class NoticeBookmarkController {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final NoticeBookmarkService noticeBookmarkService;
-    private final JwtTokenService jwtTokenService;
 
-    public NoticeBookmarkController(
-            NoticeBookmarkService noticeBookmarkService,
-            JwtTokenService jwtTokenService
-    ) {
+    public NoticeBookmarkController(NoticeBookmarkService noticeBookmarkService) {
         this.noticeBookmarkService = noticeBookmarkService;
-        this.jwtTokenService = jwtTokenService;
     }
 
     @Operation(
@@ -67,10 +57,9 @@ public class NoticeBookmarkController {
     public ApiResponse<NoticeBookmarkResponse> bookmark(
             @Parameter(description = "공지 ID")
             @PathVariable @Positive long noticeId,
-            @RequestHeader(name = "Authorization", required = false) String authorization
+            @Parameter(hidden = true)
+            @LoginUser long userId
     ) {
-        long userId = resolveUserId(authorization);
-
         return ApiResponse.ok(NoticeBookmarkResponse.from(
                 noticeBookmarkService.bookmark(userId, noticeId)
         ));
@@ -101,27 +90,11 @@ public class NoticeBookmarkController {
     public ApiResponse<NoticeBookmarkResponse> unbookmark(
             @Parameter(description = "공지 ID")
             @PathVariable @Positive long noticeId,
-            @RequestHeader(name = "Authorization", required = false) String authorization
+            @Parameter(hidden = true)
+            @LoginUser long userId
     ) {
-        long userId = resolveUserId(authorization);
-
         return ApiResponse.ok(NoticeBookmarkResponse.from(
                 noticeBookmarkService.unbookmark(userId, noticeId)
         ));
-    }
-
-    private long resolveUserId(String authorization) {
-        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
-            throw new InvalidTokenException("Missing bearer token.");
-        }
-
-        String token = authorization.substring(BEARER_PREFIX.length()).trim();
-        Claims claims = jwtTokenService.parse(token);
-
-        try {
-            return Long.parseLong(claims.getSubject());
-        } catch (NumberFormatException ex) {
-            throw new InvalidTokenException("Invalid token subject.");
-        }
     }
 }

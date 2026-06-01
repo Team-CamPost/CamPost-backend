@@ -1,7 +1,7 @@
 package com.campost.backend.domain.post.bookmark.service;
 
 import com.campost.backend.domain.post.bookmark.model.NoticeBookmarkStatus;
-import com.campost.backend.domain.post.bookmark.repository.NoticeBookmarkRepository;
+import com.campost.backend.domain.post.bookmark.repository.NoticeBookmarkStore;
 import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
@@ -12,25 +12,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class NoticeBookmarkServiceTest {
 
-    private final FakeNoticeBookmarkRepository noticeBookmarkRepository = new FakeNoticeBookmarkRepository();
-    private final NoticeBookmarkService noticeBookmarkService = new NoticeBookmarkService(noticeBookmarkRepository);
+    private final FakeNoticeBookmarkStore noticeBookmarkStore = new FakeNoticeBookmarkStore();
+    private final NoticeBookmarkService noticeBookmarkService = new NoticeBookmarkService(noticeBookmarkStore);
 
     @Test
     void bookmarkSavesNoticeBookmark() {
-        noticeBookmarkRepository.articleId = Optional.of("12345");
+        noticeBookmarkStore.articleId = Optional.of("12345");
 
         NoticeBookmarkStatus status = noticeBookmarkService.bookmark(1L, 10L);
 
         assertThat(status.noticeId()).isEqualTo(10L);
         assertThat(status.bookmarked()).isTrue();
-        assertThat(noticeBookmarkRepository.savedUserId).isEqualTo(1L);
-        assertThat(noticeBookmarkRepository.savedNoticeId).isEqualTo(10L);
-        assertThat(noticeBookmarkRepository.savedArticleId).isEqualTo("12345");
+        assertThat(noticeBookmarkStore.savedUserId).isEqualTo(1L);
+        assertThat(noticeBookmarkStore.savedNoticeId).isEqualTo(10L);
+        assertThat(noticeBookmarkStore.savedArticleId).isEqualTo("12345");
     }
 
     @Test
     void bookmarkThrowsExceptionWhenNoticeDoesNotExist() {
-        noticeBookmarkRepository.articleId = Optional.empty();
+        noticeBookmarkStore.articleId = Optional.empty();
 
         assertThatThrownBy(() -> noticeBookmarkService.bookmark(1L, 999L))
                 .isInstanceOf(NoSuchElementException.class);
@@ -38,25 +38,25 @@ class NoticeBookmarkServiceTest {
 
     @Test
     void unbookmarkDeletesNoticeBookmark() {
-        noticeBookmarkRepository.noticeExists = true;
+        noticeBookmarkStore.noticeExists = true;
 
         NoticeBookmarkStatus status = noticeBookmarkService.unbookmark(1L, 10L);
 
         assertThat(status.noticeId()).isEqualTo(10L);
         assertThat(status.bookmarked()).isFalse();
-        assertThat(noticeBookmarkRepository.deletedUserId).isEqualTo(1L);
-        assertThat(noticeBookmarkRepository.deletedNoticeId).isEqualTo(10L);
+        assertThat(noticeBookmarkStore.deletedUserId).isEqualTo(1L);
+        assertThat(noticeBookmarkStore.deletedNoticeId).isEqualTo(10L);
     }
 
     @Test
     void unbookmarkThrowsExceptionWhenNoticeDoesNotExist() {
-        noticeBookmarkRepository.noticeExists = false;
+        noticeBookmarkStore.noticeExists = false;
 
         assertThatThrownBy(() -> noticeBookmarkService.unbookmark(1L, 999L))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
-    private static class FakeNoticeBookmarkRepository extends NoticeBookmarkRepository {
+    private static class FakeNoticeBookmarkStore implements NoticeBookmarkStore {
 
         private Optional<String> articleId = Optional.empty();
         private boolean noticeExists;
@@ -65,10 +65,6 @@ class NoticeBookmarkServiceTest {
         private String savedArticleId;
         private long deletedUserId;
         private long deletedNoticeId;
-
-        private FakeNoticeBookmarkRepository() {
-            super(null);
-        }
 
         @Override
         public Optional<String> findArticleIdByNoticeId(long noticeId) {

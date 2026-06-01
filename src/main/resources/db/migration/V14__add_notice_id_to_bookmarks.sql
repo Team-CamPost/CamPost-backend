@@ -15,6 +15,15 @@ ALTER TABLE bookmarks
 
 DO $$
 BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'bookmarks_user_id_article_id_key'
+    ) THEN
+        ALTER TABLE bookmarks
+            DROP CONSTRAINT bookmarks_user_id_article_id_key;
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1
         FROM pg_constraint

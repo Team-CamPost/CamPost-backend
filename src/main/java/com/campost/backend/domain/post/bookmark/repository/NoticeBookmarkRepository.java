@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public class NoticeBookmarkRepository {
+public class NoticeBookmarkRepository implements NoticeBookmarkStore {
 
     private final JdbcClient jdbcClient;
 
@@ -14,6 +14,7 @@ public class NoticeBookmarkRepository {
         this.jdbcClient = jdbcClient;
     }
 
+    @Override
     public Optional<String> findArticleIdByNoticeId(long noticeId) {
         String sql = """
                 SELECT article_id
@@ -27,21 +28,22 @@ public class NoticeBookmarkRepository {
                 .optional();
     }
 
+    @Override
     public boolean existsNoticeById(long noticeId) {
         String sql = """
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM notices
-                    WHERE id = :noticeId
-                )
+                SELECT 1
+                FROM notices
+                WHERE id = :noticeId
                 """;
 
-        return Boolean.TRUE.equals(jdbcClient.sql(sql)
+        return jdbcClient.sql(sql)
                 .param("noticeId", noticeId)
-                .query(Boolean.class)
-                .single());
+                .query(Integer.class)
+                .optional()
+                .isPresent();
     }
 
+    @Override
     public void save(long userId, long noticeId, String articleId) {
         String sql = """
                 INSERT INTO bookmarks (user_id, notice_id, article_id)
@@ -56,6 +58,7 @@ public class NoticeBookmarkRepository {
                 .update();
     }
 
+    @Override
     public boolean delete(long userId, long noticeId) {
         String sql = """
                 DELETE FROM bookmarks
