@@ -56,7 +56,9 @@ public record RawNoticePayload(
             @JsonProperty("preview_pdf_checksum") String previewPdfChecksum,
             @JsonProperty("conversion_status") String conversionStatus,
             @JsonProperty("conversion_engine") String conversionEngine,
-            @JsonProperty("conversion_error") String conversionError
+            @JsonProperty("conversion_error") String conversionError,
+            @JsonProperty("r2_url") String r2Url,
+            @JsonProperty("preview_pdf_r2_url") String previewPdfR2Url
     ) {
     }
 }

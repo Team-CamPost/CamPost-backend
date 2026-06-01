@@ -93,6 +93,7 @@ public record NoticeDetailDto(
             "checksum",
             "sourceUrl",
             "localPath",
+            "r2Url",
             "downloadOk",
             "extractedText",
             "extractedChars",
@@ -101,6 +102,7 @@ public record NoticeDetailDto(
             "parseOk",
             "downloadCached",
             "previewPdfPath",
+            "previewPdfR2Url",
             "previewPdfSize",
             "previewPdfChecksum",
             "conversionStatus",
@@ -129,6 +131,8 @@ public record NoticeDetailDto(
             String sourceUrl,
             @JsonProperty("localPath")
             String localPath,
+            @JsonProperty("r2Url")
+            String r2Url,
             @JsonProperty("downloadOk")
             Boolean downloadOk,
             @JsonProperty("extractedText")
@@ -145,6 +149,8 @@ public record NoticeDetailDto(
             Boolean downloadCached,
             @JsonProperty("previewPdfPath")
             String previewPdfPath,
+            @JsonProperty("previewPdfR2Url")
+            String previewPdfR2Url,
             @JsonProperty("previewPdfSize")
             Long previewPdfSize,
             @JsonProperty("previewPdfChecksum")

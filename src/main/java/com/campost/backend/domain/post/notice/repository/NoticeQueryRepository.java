@@ -145,9 +145,9 @@ public class NoticeQueryRepository {
     private List<AttachmentDto> findAttachmentsByNoticeId(long noticeId) {
         String sql = """
                 SELECT id, file_key, original_name, ext, file_type, mime_type, file_size,
-                       checksum, source_url, local_path, download_ok, extracted_text,
+                       checksum, source_url, local_path, r2_url, download_ok, extracted_text,
                        extracted_chars, parser, parse_quality, parse_ok, download_cached,
-                       preview_pdf_path, preview_pdf_size, preview_pdf_checksum,
+                       preview_pdf_path, preview_pdf_r2_url, preview_pdf_size, preview_pdf_checksum,
                        conversion_status, conversion_engine, conversion_error, created_at
                 FROM notice_attachments
                 WHERE notice_id = :noticeId
@@ -167,6 +167,7 @@ public class NoticeQueryRepository {
                         rs.getString("checksum"),
                         rs.getString("source_url"),
                         rs.getString("local_path"),
+                        rs.getString("r2_url"),
                         rs.getObject("download_ok", Boolean.class),
                         rs.getString("extracted_text"),
                         rs.getObject("extracted_chars", Integer.class),
@@ -175,6 +176,7 @@ public class NoticeQueryRepository {
                         rs.getObject("parse_ok", Boolean.class),
                         rs.getObject("download_cached", Boolean.class),
                         rs.getString("preview_pdf_path"),
+                        rs.getString("preview_pdf_r2_url"),
                         rs.getObject("preview_pdf_size", Long.class),
                         rs.getString("preview_pdf_checksum"),
                         rs.getString("conversion_status"),
