@@ -206,13 +206,15 @@ public class RawImporterRepository {
                     file_size, checksum, source_url, local_path, download_ok,
                     extracted_text, extracted_chars, parser, parse_quality, parse_ok, download_cached,
                     preview_pdf_path, preview_pdf_size, preview_pdf_checksum,
-                    conversion_status, conversion_engine, conversion_error
+                    conversion_status, conversion_engine, conversion_error,
+                    r2_url, preview_pdf_r2_url
                 ) VALUES (
                     :noticeId, :fileKey, :originalName, :ext, :fileType, :mimeType,
                     :fileSize, :checksum, :sourceUrl, :localPath, :downloadOk,
                     :extractedText, :extractedChars, :parser, :parseQuality, :parseOk, :downloadCached,
                     :previewPdfPath, :previewPdfSize, :previewPdfChecksum,
-                    :conversionStatus, :conversionEngine, :conversionError
+                    :conversionStatus, :conversionEngine, :conversionError,
+                    :r2Url, :previewPdfR2Url
                 )
                 ON CONFLICT (file_key) DO UPDATE SET
                     notice_id = EXCLUDED.notice_id,
@@ -236,7 +238,9 @@ public class RawImporterRepository {
                     preview_pdf_checksum = EXCLUDED.preview_pdf_checksum,
                     conversion_status = EXCLUDED.conversion_status,
                     conversion_engine = EXCLUDED.conversion_engine,
-                    conversion_error = EXCLUDED.conversion_error
+                    conversion_error = EXCLUDED.conversion_error,
+                    r2_url = EXCLUDED.r2_url,
+                    preview_pdf_r2_url = EXCLUDED.preview_pdf_r2_url
                 """;
 
         String fileKey = requireMaxLength(requiredValue(attachment.fileKey(), "file_key"), "file_key", 500);
@@ -286,6 +290,8 @@ public class RawImporterRepository {
                 .param("conversionStatus", normalizeConversionStatus(attachment.conversionStatus()))
                 .param("conversionEngine", conversionEngine)
                 .param("conversionError", attachment.conversionError())
+                .param("r2Url", requireMaxLength(trimToNull(attachment.r2Url()), "r2_url", 500))
+                .param("previewPdfR2Url", requireMaxLength(trimToNull(attachment.previewPdfR2Url()), "preview_pdf_r2_url", 500))
                 .update();
     }
 
