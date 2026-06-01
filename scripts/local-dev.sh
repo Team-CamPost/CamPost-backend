@@ -36,13 +36,13 @@ else
 
   echo "[INFO] Waiting for db health check..."
   for _ in $(seq 1 60); do
-    if docker compose ps db | grep -q "healthy"; then
+    if docker compose ps db | grep -qw "healthy"; then
       break
     fi
     sleep 1
   done
 
-  if ! docker compose ps db | grep -q "healthy"; then
+  if ! docker compose ps db | grep -qw "healthy"; then
     echo "[ERROR] db is not healthy yet. Check logs with: docker compose logs db"
     exit 1
   fi
