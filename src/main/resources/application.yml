@@ -42,6 +42,7 @@ app:
     dir: ${FILES_DIR:/data/files}
   importer:
     enabled: ${IMPORTER_ENABLED:true}
+    api-token: ${IMPORTER_API_TOKEN:}
     raw-store-dir: ${RAW_STORE_DIR:/data/raw}
     initial-delay-ms: ${IMPORTER_INITIAL_DELAY_MS:5000}
     fixed-delay-ms: ${IMPORTER_FIXED_DELAY_MS:30000}

@@ -162,8 +162,11 @@ public class RawImportService {
 
     private void importOne(Path file) throws IOException {
         RawNoticePayload payload = objectMapper.readValue(file.toFile(), RawNoticePayload.class);
+        importPayload(file.getFileName().toString(), payload);
+    }
 
-        validatePayload(payload, file);
+    public void importPayload(String fileName, RawNoticePayload payload) {
+        validatePayload(payload, fileName);
 
         OffsetDateTime crawledAt = parseOffsetDateTime(payload.crawledAt());
         LocalDate noticeDate = parseNoticeDate(payload.date());
@@ -173,7 +176,7 @@ public class RawImportService {
         OffsetDateTime deadlineAt = parseOffsetDateTimeOrNull(payload.deadlineAt());
 
         rawImportTxService.importOne(
-                file.getFileName().toString(),
+                fileName,
                 payload,
                 crawledAt,
                 noticeDate,
@@ -184,18 +187,18 @@ public class RawImportService {
         );
     }
 
-    private void validatePayload(RawNoticePayload payload, Path file) {
+    private void validatePayload(RawNoticePayload payload, String fileName) {
         if (payload.articleId() == null || payload.articleId().isBlank()) {
-            throw new IllegalArgumentException("article_id is required: " + file.getFileName());
+            throw new IllegalArgumentException("article_id is required: " + fileName);
         }
         if (payload.title() == null || payload.title().isBlank()) {
-            throw new IllegalArgumentException("title is required: " + file.getFileName());
+            throw new IllegalArgumentException("title is required: " + fileName);
         }
         if (payload.hash() == null || payload.hash().isBlank()) {
-            throw new IllegalArgumentException("hash is required: " + file.getFileName());
+            throw new IllegalArgumentException("hash is required: " + fileName);
         }
         if (payload.sourceId() == null) {
-            throw new IllegalArgumentException("source_id is required: " + file.getFileName());
+            throw new IllegalArgumentException("source_id is required: " + fileName);
         }
     }
 
