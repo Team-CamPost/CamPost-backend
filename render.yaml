@@ -30,5 +30,7 @@ services:
         value: logging
       - key: IMPORTER_ENABLED
         value: false
+      - key: IMPORTER_API_TOKEN
+        sync: false
       - key: AI_MOCK
         value: true

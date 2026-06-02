@@ -27,6 +27,37 @@ set -a
 source .env
 set +a
 
+ensure_java_home() {
+  local candidates=(
+    "/c/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot"
+    "/mnt/c/Program Files/Eclipse Adoptium/jdk-21.0.11.10-hotspot"
+  )
+  local candidate
+
+  if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" && -x "$JAVA_HOME/bin/javac" ]]; then
+    return
+  fi
+
+  if command -v cygpath >/dev/null 2>&1 && [[ -n "${JAVA_HOME:-}" ]]; then
+    candidate="$(cygpath --unix "$JAVA_HOME" 2>/dev/null || true)"
+    if [[ -n "$candidate" && -x "$candidate/bin/java" && -x "$candidate/bin/javac" ]]; then
+      export JAVA_HOME="$candidate"
+      return
+    fi
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if [[ -x "$candidate/bin/java" && -x "$candidate/bin/javac" ]]; then
+      export JAVA_HOME="$candidate"
+      export PATH="$JAVA_HOME/bin:$PATH"
+      echo "[INFO] JAVA_HOME set to detected JDK: $JAVA_HOME"
+      return
+    fi
+  done
+}
+
+ensure_java_home
+
 # ── DB 기동 (Neon 사용 시 스킵) ────────────────────────────────
 if echo "${SPRING_DATASOURCE_URL:-}" | grep -q "neon.tech"; then
   echo "[INFO] Neon DB detected — skipping local Docker DB startup."
