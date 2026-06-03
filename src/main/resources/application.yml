@@ -38,6 +38,8 @@ app:
   mail:
     verification-sender: ${APP_MAIL_VERIFICATION_SENDER:logging}
     from: ${APP_MAIL_FROM:no-reply@campost.local}
+    resend:
+      api-key: ${RESEND_API_KEY:}
   files:
     dir: ${FILES_DIR:/data/files}
   importer:
