@@ -14,14 +14,27 @@ jobs:
         id: trigger
         run: |
           response=$(curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
-          deploy_id=$(echo "$response" | jq -r '.deploy.id // empty')
+          echo "Hook response: $response"
+          deploy_id=$(echo "$response" | jq -r '.deploy.id // empty' 2>/dev/null || echo "")
           echo "deploy_id=$deploy_id" >> $GITHUB_OUTPUT
-          echo "Triggered deploy: $deploy_id"
+          echo "Triggered deploy: ${deploy_id:-unknown}"
 
       - name: Wait for Deploy to Complete
         id: wait
         run: |
           deploy_id="${{ steps.trigger.outputs.deploy_id }}"
+
+          # deploy_id를 못 받으면 최신 배포 ID를 직접 조회
+          if [ -z "$deploy_id" ]; then
+            echo "deploy_id not found in hook response, fetching latest deploy..."
+            sleep 15
+            deploy_id=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=1" \
+              | jq -r '.[0].deploy.id // empty' 2>/dev/null || echo "")
+            echo "Latest deploy_id: ${deploy_id:-unknown}"
+          fi
+
           if [ -z "$deploy_id" ]; then
             echo "status=unknown" >> $GITHUB_OUTPUT
             exit 0
