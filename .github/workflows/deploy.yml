@@ -1,0 +1,75 @@
+name: Deploy Backend (Render)
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Trigger Render Deploy
+        id: trigger
+        run: |
+          response=$(curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+          deploy_id=$(echo "$response" | jq -r '.deploy.id // empty')
+          echo "deploy_id=$deploy_id" >> $GITHUB_OUTPUT
+          echo "Triggered deploy: $deploy_id"
+
+      - name: Wait for Deploy to Complete
+        id: wait
+        run: |
+          deploy_id="${{ steps.trigger.outputs.deploy_id }}"
+          if [ -z "$deploy_id" ]; then
+            echo "status=unknown" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          for i in $(seq 1 30); do
+            status=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$deploy_id" \
+              | jq -r '.status // "unknown"')
+            echo "attempt $i: status=$status"
+
+            if [ "$status" = "live" ]; then
+              echo "status=success" >> $GITHUB_OUTPUT
+              exit 0
+            elif [[ "$status" == *"failed"* ]] || [ "$status" = "canceled" ]; then
+              echo "status=failed" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "status=timeout" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          STATUS="${{ steps.wait.outputs.status }}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+
+          case "$STATUS" in
+            success) EMOJI="✅"; TITLE="Backend 배포 완료"; COLOR=3066993 ;;
+            failed)  EMOJI="❌"; TITLE="Backend 배포 실패";  COLOR=15158332 ;;
+            *)       EMOJI="⚠️"; TITLE="Backend 배포 상태 확인 불가"; COLOR=16776960 ;;
+          esac
+
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg title "$EMOJI $TITLE" \
+              --argjson color "$COLOR" \
+              --arg commit "\`$SHORT_SHA\` ${{ github.event.head_commit.message }}" \
+              --arg author "${{ github.event.head_commit.author.name }}" \
+              '{embeds: [{
+                title: $title,
+                color: $color,
+                fields: [
+                  {name: "커밋", value: $commit, inline: false},
+                  {name: "작성자", value: $author, inline: true},
+                  {name: "브랜치", value: "dev", inline: true}
+                ]
+              }]}')"
