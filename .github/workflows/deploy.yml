@@ -58,31 +58,3 @@ jobs:
           done
           echo "status=timeout" >> $GITHUB_OUTPUT
 
-      - name: Notify Discord
-        if: always()
-        run: |
-          STATUS="${{ steps.wait.outputs.status }}"
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-
-          case "$STATUS" in
-            success) EMOJI="✅"; TITLE="Backend 배포 완료"; COLOR=3066993 ;;
-            failed)  EMOJI="❌"; TITLE="Backend 배포 실패";  COLOR=15158332 ;;
-            *)       EMOJI="⚠️"; TITLE="Backend 배포 상태 확인 불가"; COLOR=16776960 ;;
-          esac
-
-          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
-            -H "Content-Type: application/json" \
-            -d "$(jq -n \
-              --arg title "$EMOJI $TITLE" \
-              --argjson color "$COLOR" \
-              --arg commit "\`$SHORT_SHA\` ${{ github.event.head_commit.message }}" \
-              --arg author "${{ github.event.head_commit.author.name }}" \
-              '{embeds: [{
-                title: $title,
-                color: $color,
-                fields: [
-                  {name: "커밋", value: $commit, inline: false},
-                  {name: "작성자", value: $author, inline: true},
-                  {name: "브랜치", value: "dev", inline: true}
-                ]
-              }]}')"
