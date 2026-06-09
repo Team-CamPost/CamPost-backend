@@ -1,0 +1,43 @@
+name: CI
+
+# PR(및 dev push) 시 단위 테스트 + JaCoCo 커버리지를 강제 검증한다.
+# 테스트는 외부 의존성(DB 등) 없이 도는 순수 단위 테스트다.
+
+on:
+  pull_request:
+    branches: ["dev"]
+  push:
+    branches: ["dev"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Run tests with coverage
+        run: |
+          chmod +x mvnw
+          ./mvnw -B --no-transfer-progress test
+
+      - name: Report coverage
+        if: always()
+        run: |
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            awk -F',' 'NR>1 {cov+=$9; miss+=$8} END {printf "Line coverage: %.1f%% (covered %d / total %d lines)\n", cov/(cov+miss)*100, cov, cov+miss}' target/site/jacoco/jacoco.csv
+          else
+            echo "jacoco.csv not found"
+          fi
