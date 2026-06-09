@@ -52,10 +52,10 @@ public class NoticeQueryRepository {
                        ) AS thumbnail_path,
                        n.deadline, n.target, n.apply_method, n.published_at, n.created_at,
                        CASE
-                         WHEN :userId IS NULL THEN FALSE
+                         WHEN CAST(:userId AS bigint) IS NULL THEN FALSE
                          ELSE EXISTS (
                            SELECT 1 FROM bookmarks b
-                           WHERE b.notice_id = n.id AND b.user_id = :userId
+                           WHERE b.notice_id = n.id AND b.user_id = CAST(:userId AS bigint)
                          )
                        END AS is_bookmarked
                 FROM notices n
@@ -176,10 +176,10 @@ public class NoticeQueryRepository {
                        n.content_stats::text AS content_stats,
                        n.source_url, n.published_at, n.created_at,
                        CASE
-                         WHEN :userId IS NULL THEN FALSE
+                         WHEN CAST(:userId AS bigint) IS NULL THEN FALSE
                          ELSE EXISTS (
                            SELECT 1 FROM bookmarks b
-                           WHERE b.notice_id = n.id AND b.user_id = :userId
+                           WHERE b.notice_id = n.id AND b.user_id = CAST(:userId AS bigint)
                          )
                        END AS is_bookmarked
                 FROM notices n
