@@ -21,13 +21,17 @@ public class NoticeQueryService {
         this.noticeQueryRepository = noticeQueryRepository;
     }
 
-    public List<NoticeDto> getNotices(int limit, String deptCode, String sortBy) {
-        return noticeQueryRepository.findNotices(normalizeLimit(limit), deptCode, sortBy);
+    public List<NoticeDto> getNotices(int limit, String deptCode, String sortBy, Long userId) {
+        return noticeQueryRepository.findNotices(normalizeLimit(limit), deptCode, sortBy, userId);
     }
 
-    public NoticeDetailDto getNoticeDetail(long noticeId) {
-        return noticeQueryRepository.findNoticeDetailById(noticeId)
+    public NoticeDetailDto getNoticeDetail(long noticeId, Long userId) {
+        return noticeQueryRepository.findNoticeDetailById(noticeId, userId)
                 .orElseThrow(() -> new NoSuchElementException("Notice not found: " + noticeId));
+    }
+
+    public List<NoticeDto> getBookmarkedNotices(long userId, int limit) {
+        return noticeQueryRepository.findBookmarkedNotices(userId, normalizeLimit(limit));
     }
 
     private int normalizeLimit(int limit) {

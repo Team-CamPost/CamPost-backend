@@ -33,7 +33,8 @@ import java.util.List;
         "attachments",
         "sourceUrl",
         "publishedAt",
-        "createdAt"
+        "createdAt",
+        "isBookmarked"
 })
 public record NoticeDetailDto(
         @JsonProperty("id")
@@ -79,7 +80,9 @@ public record NoticeDetailDto(
         @JsonProperty("publishedAt")
         OffsetDateTime publishedAt,
         @JsonProperty("createdAt")
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        @JsonProperty("isBookmarked")
+        boolean isBookmarked
 ) {
     @JsonInclude(JsonInclude.Include.ALWAYS)
     @JsonPropertyOrder({
