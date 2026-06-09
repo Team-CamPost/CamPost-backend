@@ -50,6 +50,7 @@ class LoginServiceTest {
                 "USER",
                 OffsetDateTime.now()
         ));
+        userRepository.profileCompleted = true;
 
         LoginResponse response = loginService.login(new LoginRequest("campost123", "password123"));
 
@@ -63,6 +64,7 @@ class LoginServiceTest {
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(ACCESS_TOKEN_EXPIRY_MS / 1000);
         assertThat(response.refreshTokenExpiresIn()).isEqualTo(REFRESH_TOKEN_EXPIRY_MS / 1000);
+        assertThat(response.profileCompleted()).isTrue();
         assertThat(accessClaims.getSubject()).isEqualTo("1");
         assertThat(accessClaims.get("role", String.class)).isEqualTo("USER");
         assertThat(accessClaims.get("tokenType", String.class)).isEqualTo(JwtTokenService.ACCESS_TOKEN_TYPE);
@@ -108,6 +110,7 @@ class LoginServiceTest {
     private static class FakeUserRepository implements UserRepository {
 
         private Optional<User> foundUser = Optional.empty();
+        private boolean profileCompleted = false;
 
         @Override
         public User save(SignupUserCreateCommand command) {
@@ -136,7 +139,18 @@ class LoginServiceTest {
 
         @Override
         public Optional<UserProfile> findProfileById(long userId) {
-            throw new UnsupportedOperationException("Not used in this test.");
+            return foundUser.map(user -> new UserProfile(
+                    user.id(),
+                    user.username(),
+                    user.email(),
+                    user.name(),
+                    null,
+                    null,
+                    user.role(),
+                    profileCompleted,
+                    user.createdAt(),
+                    null
+            ));
         }
 
         @Override
