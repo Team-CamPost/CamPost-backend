@@ -9,7 +9,8 @@ public record LoginResponse(
         String refreshToken,
         String tokenType,
         long expiresIn,
-        long refreshTokenExpiresIn
+        long refreshTokenExpiresIn,
+        boolean profileCompleted
 ) {
     public static LoginResponse of(
             long userId,
@@ -19,7 +20,8 @@ public record LoginResponse(
             String accessToken,
             String refreshToken,
             long expiresIn,
-            long refreshTokenExpiresIn
+            long refreshTokenExpiresIn,
+            boolean profileCompleted
     ) {
         return new LoginResponse(
                 userId,
@@ -30,7 +32,8 @@ public record LoginResponse(
                 refreshToken,
                 "Bearer",
                 expiresIn,
-                refreshTokenExpiresIn
+                refreshTokenExpiresIn,
+                profileCompleted
         );
     }
 }
