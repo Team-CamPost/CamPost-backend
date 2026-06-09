@@ -23,7 +23,8 @@ import java.time.OffsetDateTime;
         "target",
         "applyMethod",
         "publishedAt",
-        "createdAt"
+        "createdAt",
+        "isBookmarked"
 })
 public record NoticeDto(
         @JsonProperty("id")
@@ -55,6 +56,8 @@ public record NoticeDto(
         @JsonProperty("publishedAt")
         OffsetDateTime publishedAt,
         @JsonProperty("createdAt")
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        @JsonProperty("isBookmarked")
+        boolean isBookmarked
 ) {
 }
