@@ -1,238 +1,227 @@
 # CamPost Backend
 
-CamPost Backend 저장소의 개발 워크플로우와 백엔드 실행 규칙을 정리한 문서입니다.
-팀원 누구나 동일한 기준으로 이슈 발행, 브랜치 작업, PR 리뷰, 로컬 실행, 통합 스모크 테스트를 진행할 수 있도록 작성했습니다.
+대학교 학과 공지를 수집·가공·제공하는 **CamPost** 서비스의 백엔드(REST API 서버) 저장소입니다.
+인증·회원, 공지 조회, 북마크, 크롤링 데이터 적재(Importer) 등 핵심 비즈니스 로직과 데이터 API를 담당합니다.
 
-## 1. 개발 전 작업
+> **기본 브랜치는 `dev`입니다.** 모든 작업은 `dev`에서 분기하고 `dev`로 병합합니다. `dev` 직접 push는 금지입니다.
 
-### 1-1. Issue 발행
+> **CamPost는 3개 저장소로 구성됩니다.**
+>
+> | 저장소               | 역할                          | 스택                  |
+> | -------------------- | ----------------------------- | --------------------- |
+> | **CamPost-frontend** | 사용자 화면                   | React · Vite          |
+> | **CamPost-backend**  | REST API · 인증 · 데이터 적재 (현재 저장소) | Spring Boot · Java |
+> | **CamPost-pipeline** | 공지 크롤링 · 가공            | Python · Playwright   |
+>
+> Pipeline이 크롤링한 데이터를 Backend Importer가 DB에 적재하고, Backend REST API가 Frontend에 제공합니다.
 
-- 이슈 하나(브랜치 하나)에서는 하나의 기능만 개발합니다.
-- 이슈 제목 규칙:
-  - [이슈종류] 이슈 제목
-  - 예시: [Feat] example API 구현, [Fix] dev 브랜치 충돌 해결
-- 이슈 템플릿:
-  - .github/ISSUE_TEMPLATE/feature_request.md
-- 이슈 작성 시 필수:
-  - Assignees 지정
-  - Labels 지정
-  - 작업 체크리스트 작성
+---
 
-### 1-2. 로컬 최신화
+## 1. 기술 스택
 
-개발 시작 전 반드시 최신 변경 사항을 반영합니다.
+| 구분         | 사용 기술                                       |
+| ------------ | ----------------------------------------------- |
+| 언어/프레임워크 | Java 17 · Spring Boot 3.4                        |
+| 데이터 접근  | Spring JDBC (`JdbcClient`) — **JPA 미사용**      |
+| 데이터베이스 | PostgreSQL (Neon) · Flyway 마이그레이션          |
+| 인증         | JWT (jjwt) — Access/Refresh 토큰                 |
+| 메일         | Spring Mail (Resend API / SMTP / Logging 모드)   |
+| API 문서     | SpringDoc OpenAPI (Swagger UI)                   |
+| 빌드/테스트  | Maven (`mvnw`) · JUnit · JaCoCo 커버리지         |
+| 배포         | Render (GitHub Actions 자동 배포)                |
 
-```bash
-git fetch
-git pull
-```
+---
 
-## 2. 브랜치 전략
+## 2. 시작하기 (신규 팀원용)
 
-### 2-1. Git Flow 기반 운영
+### 2-1. 사전 준비
 
-- dev 브랜치: default 브랜치, 개발 통합용
-- 기능 브랜치: dev에서 분기 후 dev로 병합
+- JDK 17
+- (선택) Docker — 로컬 PostgreSQL/Mailpit 사용 시
 
-### 2-2. 브랜치 네이밍 규칙
-
-- 규칙: 타입/이슈번호-기능명
-- 예시:
-  - feat/12-init-project
-  - fix/3-add-login
-  - refactor/22-cart-page
-  - docs/15-readme
-
-사용 타입:
-
-| 타입 | 설명 |
-| --- | --- |
-| chore | 프로젝트 설정 |
-| docs | 문서 수정 |
-| feat | 기능 개발 |
-| fix | 버그 수정 |
-| refactor | 구조 개선 |
-| style | 스타일 수정 |
-
-## 3. 개발 후 Commit & Push
-
-### 3-1. 코드 정리 규칙
-
-- 커밋 전 로컬 검증 권장:
+### 2-2. 설치 및 실행
 
 ```bash
-bash scripts/check-local.sh
+# 1. 저장소 클론 후 dev 브랜치로 이동
+git clone <repo-url>
+cd CamPost-backend
+git switch dev
+
+# 2. 최초 1회: .env 생성 및 초기화
+bash scripts/setup-local.sh
+#   .env 의 <REQUIRED> 값(DB 접속정보, JWT_SECRET 등)을 채운다
+
+# 3. 로컬 실행 (DB는 Neon 사용 시 Docker 없이 JVM만 기동)
+bash scripts/local-dev.sh
 ```
 
-- Java 코드는 IDE 포맷터 + 정적 분석 규칙을 준수합니다.
-- dev 브랜치 직접 push는 금지합니다.
+> **로컬 개발 핵심 규칙**: `docker compose up --build`를 매번 쓰지 않습니다.
+> `local-dev.sh`는 `.env`의 `SPRING_DATASOURCE_URL`이 **Neon이면 Docker 없이 Spring Boot만 기동**하고,
+> 아니면 로컬 PostgreSQL(`db`)·Mailpit을 Docker로 띄운 뒤 `./mvnw spring-boot:run`을 실행합니다.
+> 코드 수정 후엔 `Ctrl+C` → `local-dev.sh` 재실행으로 반영합니다.
 
-### 3-2. 커밋 메시지 규칙
+### 2-3. 주요 환경 변수 (`.env`)
 
-- 규칙: 타입: 커밋 설명 (#이슈번호)
-- 예시:
+| 변수                            | 설명                                            |
+| ------------------------------- | ----------------------------------------------- |
+| `SPRING_DATASOURCE_URL`         | PostgreSQL(Neon) 접속 URL                       |
+| `SPRING_DATASOURCE_USERNAME/PASSWORD` | DB 계정                                    |
+| `JWT_SECRET` · `JWT_EXPIRY_MS`  | JWT 서명 키 · 만료 시간                         |
+| `APP_CORS_ALLOWED_ORIGINS`      | CORS 허용 오리진 (쉼표 구분)                    |
+| `APP_MAIL_VERIFICATION_SENDER`  | 메일 발송 모드: `logging`(기본) / `resend` / `smtp` |
+| `RESEND_API_KEY` · `APP_MAIL_FROM` | Resend 모드 발송 설정                        |
+| `IMPORTER_ENABLED`              | raw JSON → DB 적재 스케줄러 on/off (로컬 적재 시 true) |
 
-```bash
-git commit -m "feat: 로그인 구현 (#9)"
-git commit -m "fix: 카드 페이지 수정 (#10)"
-git commit -m "refactor: 아이콘 리팩토링 (#13)"
-```
+### 2-4. 엔드포인트 확인
 
-- 커밋 Body에는 변경 이유와 테스트 내용을 상세히 작성합니다.
+| 항목         | URL                                            |
+| ------------ | ---------------------------------------------- |
+| Health       | `http://localhost:8080/api/v1/health`          |
+| Swagger UI   | `http://localhost:8080/swagger-ui.html`        |
+| OpenAPI JSON | `http://localhost:8080/v3/api-docs`            |
 
-## 4. PR 생성 및 Merge
+---
 
-### 4-1. PR 제목/본문 규칙
+## 3. 프로젝트 구조
 
-- PR 제목 규칙: 타입(#이슈번호): 핵심 PR 내용
-- 예시:
-  - Feat(#9): 로그인 구현
-  - Fix(#10): 카드 페이지 수정
-  - Refactor(#13): 아이콘 리팩토링
-- PR 템플릿:
-  - .github/pull_request_template.md
-
-### 4-2. 리뷰 및 머지 규칙
-
-- PR 작성 후 Reviewer, Assignee, Label을 지정합니다.
-- 테스트 결과(스크린샷 또는 로그)를 PR에 첨부합니다.
-- dev 브랜치 머지는 1명 이상의 Approve 이후 진행합니다.
-
-## 5. 표준 개발 워크플로우
-
-아래 순서로 팀 협업을 진행합니다.
-
-1. Issue 발행
-2. 브랜치 생성 (타입/이슈번호-기능명)
-3. 기능 개발 및 테스트
-4. Commit & Push
-5. PR 생성 (템플릿 작성 + 테스트 결과 첨부)
-6. 코드 리뷰 반영
-7. Approve 후 dev 머지
-
-## 6. 백엔드 개발 실행 가이드 (스크립트 기준)
-
-### 6-0. 로컬 개발 DB 설정 (최초 1회)
-
-기본 개발 DB는 **Neon PostgreSQL**을 사용합니다. Docker PostgreSQL은 마이그레이션/초기화 테스트 등 예외적인 경우에만 사용합니다.
-
-1. `.env.example`을 복사해 `.env` 생성: `cp .env.example .env`
-2. `.env`의 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`를 Neon 연결 정보로 채웁니다.
-   - Neon Dashboard > Connection Details > **Pooled connection string** 사용
-   - Direct connection string은 사용하지 않습니다.
-3. `JWT_SECRET`을 32자 이상의 랜덤 문자열로 채웁니다.
-4. `.env`는 절대 Git에 커밋하지 않습니다.
-
-> Neon 접속 정보는 팀 내부 채널로 공유됩니다.
-
-### 6-1. 코드를 수정할 때마다 backend 컨테이너를 중지해야 하나요?
-
-아닙니다. 평소 개발에서는 backend를 컨테이너로 띄우지 않고 로컬에서 실행하는 방식이 가장 효율적입니다.
-
-- 평소 개발 권장 방식:
-  - docker compose up -d --build 를 매번 사용하지 않음
-  - scripts/local-dev.sh 실행
-  - Neon DB 사용 시 Docker DB 기동을 자동으로 스킵하고 바로 Spring Boot 실행
-- 코드 수정 후 반영 방법:
-  - local-dev.sh 실행 터미널에서 Ctrl + C
-  - 다시 scripts/local-dev.sh 실행
-  - 도커 재빌드 없이 수정 사항 즉시 반영
-
-### 6-2. PR(Merge) 전 최종 테스트는 compose-smoke.sh로 하나요?
-
-네. 정확합니다.
-
-- 목적:
-  - 로컬에서만 동작하는 코드가 아니라, 도커 통합 환경에서도 정상 동작하는지 검증
-- scripts/compose-smoke.sh는 다음 통합 구성을 대상으로 스모크 테스트를 수행:
-  - db + backend + pipeline
-- 즉, 프론트엔드를 제외한 핵심 백엔드 시스템이 실제 배포 유사 환경에서 정상 기동되는지 확인하는 단계입니다.
-
-### 6-3. compose-smoke.sh 실행 전에 무엇을 꺼야 하나요?
-
-- 도커 컨테이너는 수동으로 미리 내릴 필요가 없습니다.
-- compose-smoke.sh가 --build 옵션으로 최신 코드 기준 재조립/재기동을 수행합니다.
-- 주의할 점:
-  - local-dev.sh로 실행 중인 로컬 backend 서버는 반드시 Ctrl + C로 종료 후 실행
-  - 종료하지 않으면 8080 포트 충돌이 발생할 수 있습니다.
-
-## 7. 프로젝트 폴더 구조
-
-아래는 backend 저장소의 핵심 구조입니다.
+`global + domain` 패턴. 각 도메인은 `controller → service → repository` 단방향 레이어로 구성됩니다.
 
 ```text
 CamPost-backend/
 ├─ .github/
-│  ├─ ISSUE_TEMPLATE/
-│  │  └─ feature_request.md
+│  ├─ ISSUE_TEMPLATE/feature_request.md
+│  ├─ workflows/
+│  │  ├─ ci.yml                  # CI: 테스트 + JaCoCo 커버리지 (PR/푸시)
+│  │  └─ deploy.yml              # CD: Render 자동 배포 (dev 푸시)
 │  └─ pull_request_template.md
-├─ db/
-│  └─ README.md
-├─ docs/
-│  └─ backend-architecture-mvp.md
 ├─ scripts/
-│  ├─ setup-local.sh
-│  ├─ local-dev.sh
-│  ├─ check-local.sh
-│  └─ compose-smoke.sh
-├─ src/
-│  └─ main/
-│     ├─ java/com/campost/backend/
-│     │  ├─ global/            # 공통 설정/예외/응답
-│     │  └─ domain/            # 도메인별 비즈니스 로직
-│     │     ├─ auth/
-│     │     ├─ collect/
-│     │     │  ├─ query/
-│     │     │  └─ importer/
-│     │     ├─ post/
-│     │     │  └─ notice/
-│     │     ├─ hub/
-│     │     ├─ personal/
-│     │     ├─ notification/
-│     │     ├─ admin/
-│     │     ├─ ugc/
-│     │     ├─ community/
-│     │     └─ health/
-│     └─ resources/
-│        ├─ db/migration/
-│        │  ├─ V1__collect_schema.sql
-│        │  ├─ V2__post_schema.sql
-│        │  ├─ V3__user_personal_admin_schema.sql
-│        │  └─ V4__seed_initial_data.sql
-│        └─ application.yml
-├─ .env.example
-├─ .env.local.example       # deprecated
-├─ docker-compose.yml
+│  ├─ setup-local.sh             # 최초 1회 .env 초기화
+│  ├─ local-dev.sh               # DB 기동 + Spring Boot 실행
+│  ├─ check-local.sh             # 커밋 전 검증 (./mvnw test)
+│  └─ compose-smoke.sh           # PR 전 통합 스모크 (db+backend+pipeline)
+├─ src/main/
+│  ├─ java/com/campost/backend/
+│  │  ├─ global/                 # 공통 영역
+│  │  │  ├─ api/                 #   공통 응답 포맷 (ApiResponse)
+│  │  │  ├─ auth/                #   @LoginUser 인자 리졸버 (선택적 인증)
+│  │  │  ├─ config/              #   CORS · OpenAPI · WebMvc 설정
+│  │  │  ├─ exception/           #   전역 예외 처리
+│  │  │  └─ jwt/                 #   JWT 토큰 서비스
+│  │  └─ domain/                 # 도메인 영역
+│  │     ├─ auth/                #   이메일 인증 · 회원가입 · JWT 로그인
+│  │     ├─ user/                #   프로필 · 온보딩 · 비밀번호 · 탈퇴
+│  │     ├─ post/                #   공지 조회(notice) · 북마크(bookmark)
+│  │     ├─ collect/             #   크롤 현황 조회(query) · raw 적재(importer)
+│  │     ├─ hub/                 #   대시보드 · 검색 · 스마트 필터
+│  │     ├─ personal/            #   북마크 · 관심 키워드/카테고리
+│  │     ├─ notification/        #   키워드 알림 · 마감 임박 알림
+│  │     ├─ admin/               #   사용자/역할 관리 · 크롤러 모니터링
+│  │     ├─ ugc/  community/     #   제보 · 댓글/좋아요 (후속)
+│  │     └─ health/              #   헬스체크
+│  └─ resources/
+│     ├─ db/migration/           # Flyway 마이그레이션 (V{n}__{설명}.sql)
+│     └─ application.yml
+├─ docker-compose.yml            # db · mailpit · backend · pipeline · frontend
 ├─ Dockerfile
 ├─ pom.xml
-├─ mvnw
 └─ README.md
 ```
 
-## 8. 빠른 실행 명령어
+### 아키텍처 규칙
+
+- **레이어**: `controller → service → repository` 단방향. 도메인 간 직접 참조는 최소화하고 필요 시 service 인터페이스로 노출
+- **네이밍**: `*Controller` · `*Service` · `*Repository` · `*Request`/`*Response`/`*Dto`
+- **DB 마이그레이션**: Flyway 사용. `src/main/resources/db/migration/V{number}__{설명}.sql` (예: `V15__add_r2_url_to_attachments.sql`)
+
+---
+
+## 4. 협업 워크플로우
+
+> 모든 변경은 **이슈 → 브랜치 → 커밋 → PR → 리뷰 → `dev` 머지**의 흐름을 따릅니다.
+
+### 4-1. 브랜치 전략
+
+- **`dev` = 기본(default) 브랜치**, 개발 통합용 — **직접 push 금지**
+- 기능 브랜치는 `dev`에서 분기 후 PR로 `dev`에 병합
+- 머지 방식: **Merge commit** (PR 단위 이력·개별 커밋 보존)
 
 ```bash
-# 최초 1회: .env 생성 및 설정 안내
-bash scripts/setup-local.sh
-
-# 로컬 개발 (Neon DB 사용 시 Docker 없이 바로 실행)
-bash scripts/local-dev.sh
-
-# 로컬 검증
-bash scripts/check-local.sh
-
-# PR 전 통합 스모크 테스트
-bash scripts/compose-smoke.sh
+git switch dev
+git pull origin dev
+git switch -c feat/12-login-api    # 타입/이슈번호-기능명
 ```
 
-## 9. 백엔드 API/문서 확인
+### 4-2. 작업 순서 (Step by Step)
 
-- Health: http://localhost:8080/api/v1/health
-- Swagger UI: http://localhost:8080/swagger-ui/index.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
+1. **이슈 발행** — 하나의 이슈 = 하나의 기능. 템플릿(`.github/ISSUE_TEMPLATE`) 사용, Assignee·Label·체크리스트 작성
+2. **로컬 최신화** — `git switch dev && git pull origin dev`
+3. **브랜치 생성** — `타입/이슈번호-기능명`
+4. **개발 & 검증** — 커밋 전 `bash scripts/check-local.sh`(테스트) 실행 권장
+5. **푸시 & PR 생성** — PR 템플릿 작성, `Closes #이슈번호` 연결
+6. **CI 자동 검증** — 테스트 + 커버리지 통과 확인
+7. **코드 리뷰** — **1명 이상 Approve 필수**
+8. **`dev` 머지** — 머지 시 Render 자동 배포
 
-## 10. 협업 원칙 요약
+### 4-3. 네이밍 컨벤션
 
-- 작은 단위 이슈/브랜치/PR로 나눠 작업합니다.
+| 항목        | 규칙                         | 예시                            |
+| ----------- | ---------------------------- | ------------------------------- |
+| 브랜치      | `타입/이슈번호-기능명`       | `feat/84-resend-api`            |
+| 커밋 메시지 | `타입: 설명 (#이슈번호)`     | `feat: Resend 메일 발송 (#84)`  |
+| PR 제목     | `타입(#이슈번호): 핵심 내용` | `Fix(#90): 로그인 응답 보완`    |
+
+**사용 타입**: `feat`(기능) · `fix`(버그) · `refactor`(구조 개선) · `style`(스타일) · `chore`(설정) · `docs`(문서)
+
+---
+
+## 5. CI/CD
+
+### 5-1. CI — `.github/workflows/ci.yml`
+
+PR 생성 및 `dev` 푸시 시 자동 실행됩니다.
+
+| 단계            | 내용                                   |
+| --------------- | -------------------------------------- |
+| Run tests       | `./mvnw test` (JUnit 단위 테스트)      |
+| Report coverage | JaCoCo 라인 커버리지 측정·출력         |
+
+- 테스트는 외부 의존성(DB 등) 없이 도는 **순수 단위 테스트**
+- 공급망 보안: 액션을 **커밋 SHA로 고정**, `persist-credentials: false`
+
+### 5-2. CD — `.github/workflows/deploy.yml`
+
+`dev` 브랜치에 머지(푸시)되면 **Render로 자동 배포**됩니다.
+
+- Render Deploy Hook 호출 → **배포 완료(live)까지 폴링**해 결과 확인
+- Flyway 마이그레이션은 애플리케이션 기동 시 **자동 적용**
+- `RENDER_DEPLOY_HOOK_URL` · `RENDER_API_KEY` · `RENDER_SERVICE_ID`는 GitHub Secret으로 주입
+
+---
+
+## 6. 실행 명령어
+
+```bash
+# 로컬 개발
+bash scripts/setup-local.sh    # 최초 1회 .env 초기화
+bash scripts/local-dev.sh      # DB 기동(Neon이면 생략) + Spring Boot 실행
+
+# 검증
+bash scripts/check-local.sh    # 커밋 전 테스트
+./mvnw test                    # 전체 테스트
+./mvnw test -Dtest=ClassName#methodName   # 단일 테스트
+
+# 통합 스모크 (PR 전, Docker 필요)
+bash scripts/compose-smoke.sh  # db + backend + pipeline 통합 실행
+```
+
+> **데이터 적재(Importer)**: Pipeline이 생성한 `data/raw/*.json`을 Backend Importer가 읽어 DB에 적재합니다.
+> 로컬에서 적재하려면 `.env`의 `IMPORTER_ENABLED=true`로 설정합니다. (Render 배포 환경은 `false` 유지)
+
+---
+
+## 7. 협업 원칙 요약
+
+- 작은 단위의 **이슈 / 브랜치 / PR**로 나눠 작업합니다.
 - 규칙 기반 네이밍과 템플릿으로 커뮤니케이션 비용을 줄입니다.
-- 로컬 개발 효율(local-dev)과 배포 유사 검증(compose-smoke)을 분리해 품질을 관리합니다.
+- **`dev` 직접 push 금지** — 모든 변경은 PR + 1명 이상 리뷰를 거칩니다.
+- 코드 품질(테스트/커버리지/CI)과 자동 배포(CD)로 일관성과 안정성을 유지합니다.
